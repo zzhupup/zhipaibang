@@ -71,7 +71,7 @@
       <block wx:else>
         <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{p.holeCount > index}}" class="pcard tiny back"></view>
       </block>
-      <button wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</button>
+      <view wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</view>
     </view>
     <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">
