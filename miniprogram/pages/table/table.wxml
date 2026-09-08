@@ -59,7 +59,6 @@
     <view class="seatHead">
       <text class="pname">{{p.name}}</text>
       <text wx:if="{{p.striker}}" class="badge">👊</text><text wx:if="{{p.isMe}}" class="badge me">你</text>
-      <button wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</button>
     </view>
     <view class="holeRow">
       <block wx:if="{{p.myHole}}">
@@ -72,6 +71,7 @@
       <block wx:else>
         <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{p.holeCount > index}}" class="pcard tiny back"></view>
       </block>
+      <button wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</button>
     </view>
     <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">

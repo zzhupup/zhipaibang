@@ -263,3 +263,21 @@
 .actionRow { display: flex; gap: 10rpx; margin-top: 4rpx; }
 .actionRow .returnBtn { flex: 1; text-align: center; padding: 6rpx 0; font-size: 24rpx; margin: 0; border-radius: 8rpx; }
 .actionRow .confirmBtn { flex: 1; margin: 0; }
+
+
+/* ---------- 座位框紧凑化 ---------- */
+.seatM { padding: 8rpx 12rpx; gap: 6rpx; }
+.seatM .pname { font-size: 24rpx; }
+.seatM .holeRow { min-height: 44px; gap: 4px; }
+.seatM .holeRow .eye { margin-left: auto; }
+.eye { padding: 2rpx 10rpx; font-size: 22rpx; }
+.pcard.tiny { width: 30px; height: 44px; }
+.pcard.tiny.faceUp { width: 32px; height: 46px; }
+.pcard.tiny .pip { top: 8px; font-size: 13px; }
+.pcard.tiny .corner { font-size: 7px; top: 1px; left: 2px; }
+.pcard.tiny .corner.br { top: auto; left: auto; bottom: 1px; right: 2px; }
+.chip.mini { width: 26px; height: 26px; }
+.chip.mini .starDot { font-size: 6px; }
+.chipLine { gap: 5rpx; }
+.actionRow .returnBtn, .actionRow .confirmBtn { font-size: 23rpx; padding: 4rpx 0; }
+.seatM .msg { font-size: 20rpx; }
