@@ -120,8 +120,10 @@
 .pname { font-weight: bold; font-size: 26rpx; color: #ffe9b0; flex: 1; overflow: hidden; white-space: nowrap; }
 .badge { font-size: 20rpx; }
 .eye {
-  background: rgba(255,255,255,.1); border: 2rpx solid #2e7a58; color: #cfe8da;
-  border-radius: 8rpx; padding: 2rpx 10rpx; font-size: 22rpx; line-height: 1.5; margin: 0;
+  width: 52rpx; height: 52rpx; min-width: 0; padding: 0; margin: 0;
+  background: transparent; border: none; color: #9fc7b2;
+  font-size: 30rpx; line-height: 52rpx; text-align: center;
+  border-radius: 50%; flex: none; align-self: center;
 }
 .eye::after { border: none; }
 .holeRow { display: flex; gap: 5px; justify-content: center; min-height: 48px; }
@@ -270,7 +272,6 @@
 .seatM .pname { font-size: 24rpx; }
 .seatM .holeRow { min-height: 44px; gap: 4px; }
 .seatM .holeRow .eye { margin-left: auto; }
-.eye { padding: 2rpx 10rpx; font-size: 22rpx; }
 .pcard.tiny { width: 30px; height: 44px; }
 .pcard.tiny.faceUp { width: 32px; height: 46px; }
 .pcard.tiny .pip { top: 8px; font-size: 13px; }
