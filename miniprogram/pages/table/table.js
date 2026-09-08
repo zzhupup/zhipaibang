@@ -155,7 +155,12 @@ Page({
       vaultCards: [0, 1, 2].map(i => i < s.vaults ? 1 : 0),
       alarmCards: [0, 1, 2].map(i => i < s.alarms ? 1 : 0),
       phase: s.phase, round: s.round,
-      community: s.community, deckCount: s.deckCount, discardCount: s.discardCount,
+      community: s.community,
+      communityViews: (() => {
+        const views = [];
+        for (let i = 0; i < 5; i++) views.push({ face: s.community[i] ? poker.cardFace(s.community[i]) : null });
+        return views;
+      })(), deckCount: s.deckCount, discardCount: s.discardCount,
       centerChips: (s.centerChips || []).map(st => ({ star: st, colorCls: s.roundColor, starPos: STAR_POS[st] || STAR_POS[1] })),
       seats, mode: s.mode, n: s.n,
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
