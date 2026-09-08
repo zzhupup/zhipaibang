@@ -270,8 +270,8 @@
 /* ---------- 座位框紧凑化 ---------- */
 .seatM { padding: 8rpx 12rpx; gap: 6rpx; }
 .seatM .pname { font-size: 24rpx; }
-.seatM .holeRow { min-height: 44px; gap: 4px; }
-.seatM .holeRow .eye { margin-left: auto; }
+.seatM .holeRow { min-height: 44px; gap: 4px; justify-content: center; }
+.seatM .holeRow .eye { margin-left: 2px; }
 .pcard.tiny { width: 30px; height: 44px; }
 .pcard.tiny.faceUp { width: 32px; height: 46px; }
 .pcard.tiny .pip { top: 8px; font-size: 13px; }
