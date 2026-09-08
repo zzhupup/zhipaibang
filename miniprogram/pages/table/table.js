@@ -10,8 +10,9 @@ const STARS = n => '★'.repeat(n);
 
 Page({
   data: {
+    layout: 'round',          // round（宽屏圆桌） | stack（手机竖排）
     scale: 1,
-    stageW: STAGE_W, stageH: STAGE_H,
+    stageW: STAGE_W, stageH: STAGE_H, stackH: 500,
     playMode: 'single',       // single | host | guest
     heist: 0, vaults: 0, alarms: 0,
     vaultCards: [0, 0, 0], alarmCards: [0, 0, 0],
@@ -43,8 +44,14 @@ Page({
       const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
       winW = info.windowWidth; winH = info.windowHeight;
     } catch (e) {}
-    const scale = Math.max(0.42, Math.min((winW - 4) / STAGE_W, (winH - 210) / STAGE_H));
-    this.setData({ scale, stageW: STAGE_W * scale, stageH: STAGE_H * scale });
+    if (winW >= 700) {
+      // 宽屏：圆桌舞台等比缩放
+      const scale = Math.max(0.3, Math.min((winW - 4) / STAGE_W, (winH - 210) / STAGE_H));
+      this.setData({ layout: 'round', scale, stageW: STAGE_W * scale, stageH: STAGE_H * scale });
+    } else {
+      // 手机竖屏：毛毡面板 + 座位网格
+      this.setData({ layout: 'stack', stackH: winH - 190 });
+    }
 
     if (this.mode === 'single') {
       game.setUI({
@@ -113,6 +120,7 @@ Page({
         holeCount: p.holeCount, chips: chipViews,
         x: +x.toFixed(1), y: +y.toFixed(1),
         confirmed: p.confirmed, confirmLabel, canConfirm,
+        isMe: this.mode !== 'single' && i === this.mySeat,
         canPeek: this.mode === 'single' ? true : i === this.mySeat,
       };
     });

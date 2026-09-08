@@ -22,62 +22,82 @@
     </view>
   </view>
 
-  <!-- 圆桌舞台 -->
-  <view class="stageWrap" style="width:{{stageW}}px;height:{{stageH}}px">
-    <view class="stage" style="width:{{stageW}}px;height:{{stageH}}px;transform:scale({{scale}})">
-      <!-- 毛毡桌 -->
-      <view class="roundTable">
-        <view class="feltMark">无 声 劫 案</view>
+  <!-- 模板：中央区（公共牌 + 牌堆 + 中央筹码） -->
+  <template name="tCenter">
+    <view class="communityRow">
+      <view wx:for="{{community}}" wx:key="index" class="pcard small {{item.red?'red':''}} {{item.knight?'knight':''}}">
+        <view class="corner"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
+        <view class="pip">{{item.suit}}</view>
+        <view class="corner br"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
       </view>
-
-      <!-- 中央区 -->
-      <view class="centerArea">
-        <view class="communityRow">
-          <view wx:for="{{community}}" wx:key="index" class="pcard small {{item.red?'red':''}} {{item.knight?'knight':''}}">
-            <view class="corner"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
-            <view class="pip">{{item.suit}}</view>
-            <view class="corner br"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
-          </view>
-          <view wx:for="{{[0,1,2,3,4]}}" wx:key="*this" wx:if="{{community.length <= index}}" class="slot"><text>公共牌</text></view>
-        </view>
-        <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
-        <view class="centerChips">
-          <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
-            catchtap="onCenterChip" data-star="{{item.star}}">
-            <text class="stars">{{item.stars}}</text>
-          </view>
-          <text wx:if="{{phase==='chips' && !centerChips.length}}" class="noChip">中央已没有筹码</text>
-          <text wx:if="{{phase==='showdown'}}" class="noChip">摊牌进行中…</text>
-        </view>
+      <view wx:for="{{[0,1,2,3,4]}}" wx:for-item="s5" wx:key="*this" wx:if="{{community.length <= s5}}" class="slot"><text>公共牌</text></view>
+    </view>
+    <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
+    <view class="centerChips">
+      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
+        catchtap="onCenterChip" data-star="{{item.star}}">
+        <text class="stars">{{item.stars}}</text>
       </view>
+      <text wx:if="{{phase==='chips' && !centerChips.length}}" class="noChip">中央已没有筹码</text>
+      <text wx:if="{{phase==='showdown'}}" class="noChip">摊牌进行中…</text>
+    </view>
+  </template>
 
-      <!-- 座位 -->
-      <view class="seat" wx:for="{{seats}}" wx:key="i"
-        style="left:{{item.x}}px;top:{{item.y}}px">
-        <view class="seatHead">
-          <text class="pname">{{item.name}}</text>
-          <text wx:if="{{item.striker}}" class="badge">👊</text>
-          <button wx:if="{{item.canPeek}}" class="eye" catchtap="onPeek" data-i="{{item.i}}">👁</button>
+  <!-- 模板：座位内部 -->
+  <template name="tSeat">
+    <view class="seatHead">
+      <text class="pname">{{p.name}}</text>
+      <text wx:if="{{p.striker}}" class="badge">👊</text><text wx:if="{{p.isMe}}" class="badge me">你</text>
+      <button wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</button>
+    </view>
+    <view class="holeRow">
+      <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{p.holeCount > index}}" class="pcard tiny back"></view>
+    </view>
+    <view class="chipLine">
+      <block wx:for="{{p.chips}}" wx:for-item="ch" wx:key="id">
+        <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
+          catchtap="onSeatChip" data-i="{{p.i}}">
+          <text class="stars">{{ch.stars}}</text>
         </view>
-        <view class="holeRow">
-          <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{item.holeCount > index}}" class="pcard tiny back"></view>
+        <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{p.i}}">↩</button>
+      </block>
+      <text wx:if="{{!p.chips.length}}" class="rl">暂无筹码</text>
+    </view>
+    <button wx:if="{{phase==='chips'}}" class="confirmBtn {{p.confirmed?'on':''}} {{p.canConfirm?'':'dis'}}"
+      catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
+    <text wx:if="{{p.msg}}" class="msg">{{p.msg}}</text>
+  </template>
+
+  <!-- ============ 宽屏：圆桌舞台 ============ -->
+  <block wx:if="{{layout==='round'}}">
+    <view class="stageWrap" style="width:{{stageW}}px;height:{{stageH}}px">
+      <view class="stage" style="width:{{stageW}}px;height:{{stageH}}px;transform:scale({{scale}})">
+        <view class="roundTable"><view class="feltMark">无 声 劫 案</view></view>
+        <view class="centerArea">
+          <template is="tCenter" data="{{community, deckCount, discardCount, centerChips, phase, roundColor}}"/>
         </view>
-        <view class="chipLine">
-          <block wx:for="{{item.chips}}" wx:for-item="ch" wx:key="id">
-            <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
-              catchtap="onSeatChip" data-i="{{item.i}}">
-              <text class="stars">{{ch.stars}}</text>
-            </view>
-            <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{item.i}}">↩</button>
-          </block>
-          <text wx:if="{{!item.chips.length}}" class="rl">暂无筹码</text>
+        <view class="seat" wx:for="{{seats}}" wx:key="i" style="left:{{item.x}}px;top:{{item.y}}px">
+          <template is="tSeat" data="{{p:item, phase}}"/>
         </view>
-        <button wx:if="{{phase==='chips'}}" class="confirmBtn {{item.confirmed?'on':''}} {{item.canConfirm?'':'dis'}}"
-          catchtap="onConfirm" data-i="{{item.i}}">{{item.confirmLabel}}</button>
-        <text wx:if="{{item.msg}}" class="msg">{{item.msg}}</text>
       </view>
     </view>
-  </view>
+  </block>
+
+  <!-- ============ 手机竖屏：毛毡面板 + 座位网格 ============ -->
+  <block wx:else>
+    <scroll-view scroll-y class="stackScroll">
+      <view class="feltPanel">
+        <view class="feltMarkM">无 声 劫 案</view>
+        <template is="tCenter" data="{{community, deckCount, discardCount, centerChips, phase, roundColor}}"/>
+      </view>
+      <view class="seatGrid">
+        <view class="seatM {{item.isMe?'me':''}}" wx:for="{{seats}}" wx:key="i">
+          <template is="tSeat" data="{{p:item, phase}}"/>
+        </view>
+      </view>
+      <view class="stackFoot"></view>
+    </scroll-view>
+  </block>
 </view>
 
 <!-- 模态弹窗（单机/房主引擎弹窗 · 客人查看底牌） -->

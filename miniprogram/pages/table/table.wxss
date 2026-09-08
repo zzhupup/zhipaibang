@@ -142,6 +142,32 @@
 .confirmBtn.dis { opacity: .35; }
 .msg { font-size: 20rpx; color: #a9cbbb; }
 
+/* ---------- 手机竖排布局 ---------- */
+.stackScroll { height: 100vh; box-sizing: border-box; }
+.feltPanel {
+  position: relative; margin: 10rpx 16rpx 0;
+  background: radial-gradient(ellipse at 50% 30%, #2f8a5b, #1d5f3d 62%, #124529);
+  border-radius: 32rpx; border: 8rpx solid #5a3d23;
+  padding: 24rpx 16rpx 28rpx;
+  display: flex; flex-direction: column; align-items: center; gap: 16rpx;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.5), 0 10rpx 30rpx rgba(0,0,0,.5);
+  box-sizing: border-box;
+}
+.feltMarkM {
+  color: rgba(255,233,176,.3); letter-spacing: 10rpx;
+  font-size: 24rpx; font-weight: bold; margin-bottom: 4rpx;
+}
+.seatGrid { display: flex; flex-wrap: wrap; gap: 14rpx; padding: 20rpx 16rpx 10rpx; }
+.seatM {
+  width: calc(50% - 7rpx); box-sizing: border-box;
+  background: rgba(6,22,16,.88); border: 2rpx solid #2e7a58; border-radius: 16rpx;
+  padding: 12rpx; display: flex; flex-direction: column; gap: 8rpx;
+  box-shadow: 0 6rpx 18rpx rgba(0,0,0,.5);
+}
+.seatM.me { border-color: #7dd8a8; box-shadow: 0 0 12rpx rgba(125,216,168,.4); }
+.seatM .confirmBtn { align-self: center; margin-top: 4rpx; }
+.stackFoot { height: 40rpx; }
+
 /* ---------- 弹窗 ---------- */
 .mroot {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: none;
