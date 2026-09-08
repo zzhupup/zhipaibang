@@ -34,9 +34,9 @@
     </view>
     <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
     <view class="centerChips">
-      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}} {{item.shapeCls}}" hover-class="chipHover"
+      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
         catchtap="onCenterChip" data-star="{{item.star}}">
-        <text class="stars">{{item.label}}</text>
+        <text wx:for="{{item.starPos}}" wx:for-item="st" wx:key="index" class="starDot" style="left:{{st.x}}%;top:{{st.y}}%">★</text>
       </view>
       <text wx:if="{{phase==='chips' && !centerChips.length}}" class="noChip">中央已没有筹码</text>
       <text wx:if="{{phase==='showdown'}}" class="noChip">摊牌进行中…</text>
@@ -63,9 +63,9 @@
     <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">
       <block wx:for="{{p.chips}}" wx:for-item="ch" wx:key="id">
-        <view class="chip mini {{ch.colorCls}} {{ch.shapeCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
+        <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
           catchtap="onSeatChip" data-i="{{p.i}}">
-          <text class="stars">{{ch.label}}</text>
+          <text wx:for="{{ch.starPos}}" wx:for-item="st" wx:key="index" class="starDot" style="left:{{st.x}}%;top:{{st.y}}%">★</text>
         </view>
         <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{p.i}}">↩</button>
       </block>

@@ -6,9 +6,16 @@ const { createHostUI } = require('../../utils/onlineHost.js');
 const STAGE_W = 980, STAGE_H = 720;
 const CX = 490, CY = 360, RX = 390, RY = 278;
 const COLOR_ORDER = ['white', 'yellow', 'orange', 'red'];
-const STARS = n => '★'.repeat(n);
-/* 筹码标签：3 星以上用数字 + ★（多边形形状本身已表达星数） */
-const chipLabel = n => n >= 3 ? (n + '★') : STARS(n);
+/* 筹码内 ★ 阵型：1~2 星居中/并排，3 星三角、4 星四方、5 星五边、6 星六边
+   坐标为筹码内百分比位置（配合 .starDot 居中偏移） */
+const STAR_POS = {
+  1: [{ x: 50, y: 50 }],
+  2: [{ x: 36, y: 50 }, { x: 64, y: 50 }],
+  3: [{ x: 50, y: 24 }, { x: 26, y: 68 }, { x: 74, y: 68 }],
+  4: [{ x: 32, y: 32 }, { x: 68, y: 32 }, { x: 68, y: 68 }, { x: 32, y: 68 }],
+  5: [{ x: 50, y: 18 }, { x: 81, y: 42 }, { x: 69, y: 79 }, { x: 31, y: 79 }, { x: 19, y: 42 }],
+  6: [{ x: 50, y: 14 }, { x: 80, y: 32 }, { x: 80, y: 68 }, { x: 50, y: 86 }, { x: 20, y: 68 }, { x: 20, y: 32 }],
+};
 
 Page({
   data: {
@@ -111,7 +118,7 @@ Page({
         if (!chip) return;
         const current = s.phase === 'chips' && color === c && !chip.dark;
         chipViews.push({
-          id: c, colorCls: c, label: chipLabel(chip.star), shapeCls: 's' + chip.star,
+          id: c, colorCls: c, starPos: STAR_POS[chip.star] || STAR_POS[1],
           dark: !!chip.dark, current,
         });
       });
@@ -149,7 +156,7 @@ Page({
       alarmCards: [0, 1, 2].map(i => i < s.alarms ? 1 : 0),
       phase: s.phase, round: s.round,
       community: s.community, deckCount: s.deckCount, discardCount: s.discardCount,
-      centerChips: (s.centerChips || []).map(st => ({ star: st, label: chipLabel(st), shapeCls: 's' + st })),
+      centerChips: (s.centerChips || []).map(st => ({ star: st, starPos: STAR_POS[st] || STAR_POS[1] })),
       seats, mode: s.mode, n: s.n,
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
       pillText: this.buildPill(s),
