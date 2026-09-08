@@ -401,8 +401,8 @@ async function startRound(n) {
     const cardsTxt = S.community.slice(-flips).map(cardText).join('、');
     await ui.modal({
       title: `${ROUND_NAME[n]} — 翻开公共牌`,
-      body: (flips === 3 ? '任意一位玩家从牌堆抽 3 张正面朝上放于桌面中央：<br>' : '翻开 1 张公共牌：<br>') +
-        `<div style="margin-top:12rpx">${S.community.slice(-flips).map(c => cardTxt(c)).join('')}</div>`,
+      body: (flips === 3 ? '任意一位玩家从牌堆抽 3 张正面朝上放于桌面中央：' : '翻开 1 张公共牌：'),
+      cards: S.community.slice(-flips).map(poker.cardFace),
       actions: [{ label: '继续' }]
     });
     log(`第${n}轮翻公共牌：${cardsTxt}`, true);
