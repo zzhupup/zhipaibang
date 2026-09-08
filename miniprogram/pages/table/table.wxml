@@ -80,12 +80,14 @@
           catchtap="onSeatChip" data-i="{{p.i}}">
           <text wx:for="{{ch.starPos}}" wx:for-item="st" wx:key="index" class="starDot" style="left:{{st.x}}%;top:{{st.y}}%">★</text>
         </view>
-        <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{p.i}}">↩</button>
       </block>
       <text wx:if="{{!p.chips.length}}" class="rl">暂无筹码</text>
     </view>
-    <button wx:if="{{phase==='chips'}}" class="confirmBtn {{p.confirmed?'on':''}} {{p.canConfirm?'':'dis'}}"
-      catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
+    <view wx:if="{{phase==='chips'}}" class="actionRow">
+      <button wx:if="{{p.canReturn}}" class="returnBtn" catchtap="onReturn" data-i="{{p.i}}">↩ 撤回</button>
+      <button class="confirmBtn {{p.confirmed?'on':''}} {{p.canConfirm?'':'dis'}}"
+        catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
+    </view>
     <text wx:if="{{p.msg}}" class="msg">{{p.msg}}</text>
   </template>
 

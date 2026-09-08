@@ -257,3 +257,9 @@
 .rlbl { font-size: 22rpx; color: #8fb8a3; margin-top: 10rpx; }
 .pcard.hl2 { box-shadow: 0 0 0 6rpx #e8c15a, 0 3px 8px rgba(0,0,0,.4); }
 .mbodyS.full { max-height: 40vh; }
+
+
+/* ---------- 座位操作行（撤回+确认同排） ---------- */
+.actionRow { display: flex; gap: 10rpx; margin-top: 4rpx; }
+.actionRow .returnBtn { flex: 1; text-align: center; padding: 6rpx 0; font-size: 24rpx; margin: 0; border-radius: 8rpx; }
+.actionRow .confirmBtn { flex: 1; margin: 0; }

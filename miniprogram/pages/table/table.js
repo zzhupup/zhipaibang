@@ -146,6 +146,7 @@ Page({
         holeCount: p.holeCount, chips: chipViews, myHole, myInfo,
         x: +x.toFixed(1), y: +y.toFixed(1),
         confirmed: p.confirmed, confirmLabel, canConfirm,
+        canReturn: s.phase === 'chips' && !!p.chips[color] && !p.chips[color].dark,
         isMe: this.mode !== 'single' && i === this.mySeat,
         canPeek: this.mode === 'single',
       };
