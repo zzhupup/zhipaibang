@@ -34,9 +34,9 @@
     </view>
     <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
     <view class="centerChips">
-      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
+      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}} {{item.shapeCls}}" hover-class="chipHover"
         catchtap="onCenterChip" data-star="{{item.star}}">
-        <text class="stars">{{item.stars}}</text>
+        <text class="stars">{{item.label}}</text>
       </view>
       <text wx:if="{{phase==='chips' && !centerChips.length}}" class="noChip">中央已没有筹码</text>
       <text wx:if="{{phase==='showdown'}}" class="noChip">摊牌进行中…</text>
@@ -51,13 +51,21 @@
       <button wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</button>
     </view>
     <view class="holeRow">
-      <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{p.holeCount > index}}" class="pcard tiny back"></view>
+      <block wx:if="{{p.myHole}}">
+        <view wx:for="{{p.myHole}}" wx:for-item="hc" wx:key="index" class="pcard tiny {{hc.red?'red':''}} {{hc.knight?'knight':''}} faceUp">
+          <view class="pip" style="top:4px;font-size:11px;">{{hc.label}}{{hc.suit}}</view>
+        </view>
+      </block>
+      <block wx:else>
+        <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{p.holeCount > index}}" class="pcard tiny back"></view>
+      </block>
     </view>
+    <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">
       <block wx:for="{{p.chips}}" wx:for-item="ch" wx:key="id">
-        <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
+        <view class="chip mini {{ch.colorCls}} {{ch.shapeCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
           catchtap="onSeatChip" data-i="{{p.i}}">
-          <text class="stars">{{ch.stars}}</text>
+          <text class="stars">{{ch.label}}</text>
         </view>
         <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{p.i}}">↩</button>
       </block>

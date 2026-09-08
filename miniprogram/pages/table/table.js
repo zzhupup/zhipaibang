@@ -7,6 +7,8 @@ const STAGE_W = 980, STAGE_H = 720;
 const CX = 490, CY = 360, RX = 390, RY = 278;
 const COLOR_ORDER = ['white', 'yellow', 'orange', 'red'];
 const STARS = n => '★'.repeat(n);
+/* 筹码标签：3 星以上用数字 + ★（多边形形状本身已表达星数） */
+const chipLabel = n => n >= 3 ? (n + '★') : STARS(n);
 
 Page({
   data: {
@@ -98,6 +100,7 @@ Page({
   sync(s) {
     const n = s.players.length;
     const color = s.roundColor;
+    const isOnline = this.mode !== 'single';
     const seats = s.players.map((p, i) => {
       const ang = (Math.PI / 2) + (i * 2 * Math.PI / n);
       const x = CX + RX * Math.cos(ang);
@@ -107,8 +110,24 @@ Page({
         const chip = p.chips[c];
         if (!chip) return;
         const current = s.phase === 'chips' && color === c && !chip.dark;
-        chipViews.push({ id: c, colorCls: c, stars: STARS(chip.star), dark: !!chip.dark, current });
+        chipViews.push({
+          id: c, colorCls: c, label: chipLabel(chip.star), shapeCls: 's' + chip.star,
+          dark: !!chip.dark, current,
+        });
       });
+      // 联机模式：自己的底牌明牌常显
+      let myHole = null, myInfo = '';
+      if (isOnline && i === this.mySeat) {
+        let hole = null;
+        if (this.mode === 'host') hole = game.state.players[i].hole;
+        else if (this._myHand && this._myHand.hole) hole = this._myHand.hole;
+        if (hole && hole.length) {
+          myHole = hole.map(c => poker.cardFace(c));
+          myInfo = s.community.length >= 3
+            ? '当前牌型：' + poker.handName(poker.best5([...hole, ...s.community], p.striker).score)
+            : '组合：' + poker.partialHandName(hole);
+        }
+      }
       let confirmLabel = '', canConfirm = false;
       if (s.phase === 'chips') {
         if (p.confirmed) { confirmLabel = '✔ 已确认'; canConfirm = true; }
@@ -117,11 +136,11 @@ Page({
       }
       return {
         i, name: p.name, striker: p.striker, msg: p.msg,
-        holeCount: p.holeCount, chips: chipViews,
+        holeCount: p.holeCount, chips: chipViews, myHole, myInfo,
         x: +x.toFixed(1), y: +y.toFixed(1),
         confirmed: p.confirmed, confirmLabel, canConfirm,
         isMe: this.mode !== 'single' && i === this.mySeat,
-        canPeek: this.mode === 'single' ? true : i === this.mySeat,
+        canPeek: this.mode === 'single',
       };
     });
     this.setData({
@@ -130,7 +149,7 @@ Page({
       alarmCards: [0, 1, 2].map(i => i < s.alarms ? 1 : 0),
       phase: s.phase, round: s.round,
       community: s.community, deckCount: s.deckCount, discardCount: s.discardCount,
-      centerChips: (s.centerChips || []).map(st => ({ star: st, stars: STARS(st) })),
+      centerChips: (s.centerChips || []).map(st => ({ star: st, label: chipLabel(st), shapeCls: 's' + st })),
       seats, mode: s.mode, n: s.n,
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
       pillText: this.buildPill(s),

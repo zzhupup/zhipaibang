@@ -209,3 +209,21 @@
   background: rgba(214,69,65,.15); border: 2rpx solid #d64541; border-radius: 12rpx;
   padding: 12rpx; color: #ffd2cd; text-align: center; font-size: 26rpx; margin-bottom: 16rpx;
 }
+
+
+/* ---------- 多边形筹码（3星三角/4星方形/5星五边/6星六边） ---------- */
+.chip.s3, .chip.s4, .chip.s5, .chip.s6 { border-radius: 0; }
+.chip.s3 { clip-path: polygon(50% 4%, 97% 92%, 3% 92%); }
+.chip.s3 .stars, .chip.s3 .stars { margin-top: 12px; }
+.chip.s4 { clip-path: polygon(8% 8%, 92% 8%, 92% 92%, 8% 92%); }
+.chip.s5 { clip-path: polygon(50% 2%, 98% 38%, 80% 96%, 20% 96%, 2% 38%); }
+.chip.s6 { clip-path: polygon(25% 3%, 75% 3%, 98% 50%, 75% 97%, 25% 97%, 2% 50%); }
+.chip .stars { font-size: 11px; font-weight: bold; color: #222; }
+.chip.red .stars { color: #fff; }
+.chip.s3 .stars { margin-top: 14px; font-size: 10px; }
+.chip.mini .stars { font-size: 8px; }
+.chip.mini.s3 .stars { margin-top: 7px; font-size: 7px; }
+
+/* ---------- 自己的明牌底牌 ---------- */
+.pcard.faceUp { border: 2rpx solid #7dd8a8; }
+.myInfo { color: #ffe9b0 !important; text-align: center; }
