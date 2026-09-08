@@ -53,7 +53,9 @@
     <view class="holeRow">
       <block wx:if="{{p.myHole}}">
         <view wx:for="{{p.myHole}}" wx:for-item="hc" wx:key="index" class="pcard tiny {{hc.red?'red':''}} {{hc.knight?'knight':''}} faceUp">
-          <view class="pip" style="top:4px;font-size:11px;">{{hc.label}}{{hc.suit}}</view>
+          <view class="corner"><text>{{hc.label}}</text><text>{{hc.suit}}</text></view>
+          <view class="pip">{{hc.suit}}</view>
+          <view class="corner br"><text>{{hc.label}}</text><text>{{hc.suit}}</text></view>
         </view>
       </block>
       <block wx:else>

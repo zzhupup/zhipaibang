@@ -241,3 +241,11 @@
 .chip.st6 { background: #d64541; }
 .chip.st1 .starDot, .chip.st4 .starDot { color: #222; }
 .chip.st2 .starDot, .chip.st3 .starDot, .chip.st5 .starDot, .chip.st6 .starDot { color: #fff; }
+
+
+/* ---------- tiny 完整卡面 ---------- */
+.pcard.tiny .corner { top: 2px; left: 3px; font-size: 8px; line-height: 1.1; }
+.pcard.tiny .corner.br { top: auto; left: auto; bottom: 2px; right: 3px; }
+.pcard.tiny .pip { top: 10px; font-size: 15px; }
+.pcard.tiny.faceUp { width: 38px; height: 54px; }
+.pcard.tiny.faceUp .pip { top: 12px; font-size: 16px; }
