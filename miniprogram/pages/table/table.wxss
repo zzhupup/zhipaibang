@@ -249,3 +249,11 @@
 .pcard.tiny .pip { top: 10px; font-size: 15px; }
 .pcard.tiny.faceUp { width: 38px; height: 54px; }
 .pcard.tiny.faceUp .pip { top: 12px; font-size: 16px; }
+
+
+/* ---------- 弹窗内完整卡面 ---------- */
+.mcards { display: flex; gap: 16rpx; flex-wrap: wrap; padding: 10rpx 0; }
+.mreveal .mcards { gap: 12rpx; }
+.rlbl { font-size: 22rpx; color: #8fb8a3; margin-top: 10rpx; }
+.pcard.hl2 { box-shadow: 0 0 0 6rpx #e8c15a, 0 3px 8px rgba(0,0,0,.4); }
+.mbodyS.full { max-height: 40vh; }

@@ -22,6 +22,15 @@
     </view>
   </view>
 
+  <!-- 模板：单张完整卡面（弹窗用，f.hl=金边高亮） -->
+  <template name="tCard">
+    <view class="pcard small {{f.red?'red':''}} {{f.knight?'knight':''}} {{f.hl?'hl2':''}}">
+      <view class="corner"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+      <view class="pip">{{f.suit}}</view>
+      <view class="corner br"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+    </view>
+  </template>
+
   <!-- 模板：中央区（公共牌 + 牌堆 + 中央筹码） -->
   <template name="tCenter">
     <view class="communityRow">
@@ -116,7 +125,22 @@
 <view class="mroot {{modal?'show':''}}">
   <view class="mbox" wx:if="{{modal}}" catchtap="noop">
     <view class="mtitle {{modal.titleCls}}">{{modal.title}}</view>
-    <scroll-view scroll-y class="mbodyS">
+    <!-- 完整卡面（看底牌/换新牌/王牌等） -->
+    <view wx:if="{{modal.cards}}" class="mcards">
+      <template wx:for="{{modal.cards}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+    </view>
+    <!-- 摊牌：底牌 + 公共牌（金边=参与比较） -->
+    <view wx:if="{{modal.reveal}}" class="mreveal">
+      <view class="rlbl">底牌：</view>
+      <view class="mcards">
+        <template wx:for="{{modal.reveal.holeFaces}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+      </view>
+      <view class="rlbl">公共牌：</view>
+      <view class="mcards">
+        <template wx:for="{{modal.reveal.communityFaces}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+      </view>
+    </view>
+    <scroll-view scroll-y class="mbodyS {{modal.cards||modal.reveal?'':'full'}}">
       <rich-text nodes="{{modal.body}}"></rich-text>
     </scroll-view>
     <view class="macts">

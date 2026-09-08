@@ -78,6 +78,11 @@ function cardTxt(c, hl) {
   const red = c.s === 1 || c.s === 2;
   return `<span style="display:inline-block;margin:4rpx;padding:6rpx 14rpx;border-radius:8rpx;background:#fdfcf7;color:${red ? '#c8352e' : '#111'};font-weight:bold;${hl ? 'border:4rpx solid #e8c15a;' : ''}">${RANK_TXT[c.r]}${poker.SUITS[c.s]}</span>`;
 }
+/* 牌面视图 + 金边高亮标记（摊牌用） */
+function facesWithHl(cards, bestCards) {
+  const keys = new Set((bestCards || []).map(c => c.r + '_' + c.s));
+  return cards.map(c => { const f = poker.cardFace(c); f.hl = keys.has(c.r + '_' + c.s); return f; });
+}
 function cardsHtml(hole, community, bestCards) {
   const isBest = c => bestCards && bestCards.some(b => b === c);
   let h = '<div style="color:#8fb8a3;font-size:22rpx;margin-top:8rpx">底牌：</div>';
@@ -143,7 +148,6 @@ function showRoundInfo() {
 /* ---------------- 隐私查看底牌 ---------------- */
 function peekHtml(i) {
   const p = S.players[i];
-  const cards = p.hole.map(c => cardTxt(c)).join('');
   let info;
   if (S.community.length >= 3) {
     const b = best5([...p.hole, ...S.community], p.striker);
@@ -151,13 +155,14 @@ function peekHtml(i) {
   } else {
     info = `你目前的底牌组合：<b style="color:#e8c15a">${partialHandName(p.hole)}</b>（仅供参考，禁止告诉别人）`;
   }
-  return privWarn(p.name) + `<div>${cards}</div><div style="margin-top:16rpx;font-size:26rpx;line-height:1.7">${info}</div>`;
+  return privWarn(p.name) + `<div style="margin-top:16rpx;font-size:26rpx;line-height:1.7">${info}</div>`;
 }
 function peekPlayer(i) {
   const p = S.players[i];
   return ui.modal({
     title: `⚠ ${p.name} 查看底牌`,
     body: peekHtml(i),
+    cards: p.hole.map(poker.cardFace),
     player: i,
     actions: [{ label: '看完了，隐藏' }]
   }).then(() => { p.msg = ''; ui.render(); });
@@ -277,7 +282,8 @@ async function runExpertPrePhase() {
       const cardIdx = await pickHoleCard(shower, '选择要秘密展示的一张底牌：');
       await ui.modal({
         title: `🤫 只有 ${S.players[viewer].name} 可以看`,
-        body: privWarn(S.players[viewer].name) + `<div>${cardTxt(S.players[shower].hole[cardIdx])}</div>`,
+        body: privWarn(S.players[viewer].name),
+        cards: [poker.cardFace(S.players[shower].hole[cardIdx])],
         player: viewer,
         actions: [{ label: '记住并隐藏' }]
       });
@@ -351,8 +357,13 @@ async function runExpertPrePhase() {
       const idx = await pickHoleCard(who, '你获得了 <b>王牌J（无花色，不能组同花）</b>。现在选择一张"王牌"以外的底牌正面朝下放入弃牌堆：', knight);
       const removed = S.players[who].hole.splice(idx, 1)[0];
       S.discard.push(removed);
-      const remain = S.players[who].hole.map(c => cardTxt(c)).join('');
-      await ui.modal({ title: '王牌完成', body: `你已将 <b>${cardText(removed)}</b> 放入弃牌堆，你的底牌为：<div style="margin-top:10rpx">${remain}</div>`, player: who, actions: [{ label: '确定' }] });
+      await ui.modal({
+        title: '王牌完成',
+        body: `你已将 <b>${cardText(removed)}</b> 放入弃牌堆，你的底牌如下：`,
+        cards: S.players[who].hole.map(poker.cardFace),
+        player: who,
+        actions: [{ label: '确定' }]
+      });
     });
   }
   else if (e === 8) { // 神算子
@@ -442,7 +453,8 @@ async function forceRedraw(i, challName, reason) {
   await privateStep(i, async () => {
     await ui.modal({
       title: `🤫 ${p.name} 的新底牌`,
-      body: privWarn(p.name) + `<div>${p.hole.map(c => cardTxt(c)).join('')}</div>`,
+      body: privWarn(p.name),
+      cards: p.hole.map(poker.cardFace),
       player: i,
       actions: [{ label: '记住了' }]
     });
@@ -612,8 +624,11 @@ async function showdown() {
       } else {
         await ui.modal({
           title: '💥 摊牌错误！',
-          body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！` +
-            `<div>${cardsHtml(p.hole, S.community, b.cards)}</div><div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`,
+          body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`,
+          reveal: {
+            holeFaces: facesWithHl(p.hole, b.cards),
+            communityFaces: facesWithHl(S.community, b.cards),
+          },
           actions: [{ label: '唉…接受失败' }]
         });
         log(`${p.name} 的牌型 ${handName(b.score)} 弱于上一位的 ${handName(prev.score)}，劫案失败！`, true);
@@ -623,9 +638,12 @@ async function showdown() {
     const firstTag = !prev ? '<div style="margin-top:12rpx"><span style="font-size:26rpx;padding:6rpx 20rpx;border-radius:10rpx;background:rgba(61,155,109,.3);color:#8fe6b4;border:2rpx solid #57c48f;font-weight:bold">✔ 第一位展示，无比较对象</span></div>' : '';
     await ui.modal({
       title: `${p.name} 的牌型`,
-      body: `<div>${cardsHtml(p.hole, S.community, b.cards)}</div>` +
-        `<div style="font-size:30rpx;margin-top:12rpx">最强五张牌型：<b style="color:#e8c15a">${handName(b.score)}</b>${p.striker ? ' <span style="font-size:24rpx;color:#ffb3ae">👊 镇场老大</span>' : ''}</div>` +
+      body: `<div style="font-size:30rpx;margin-top:8rpx">最强五张牌型：<b style="color:#e8c15a">${handName(b.score)}</b>${p.striker ? ' <span style="font-size:24rpx;color:#ffb3ae">👊 镇场老大</span>' : ''}</div>` +
         `<div style="font-size:23rpx;color:#8fb8a3;margin-top:4rpx">（金色描边的牌为参与比较的牌型组成）</div>${cmpHtml}${firstTag}`,
+      reveal: {
+        holeFaces: facesWithHl(p.hole, b.cards),
+        communityFaces: facesWithHl(S.community, b.cards),
+      },
       actions: [{ label: '下一位' }]
     });
     log(`${p.name} 展示：${handName(b.score)}${prev ? `（对比 ${handName(prev.score)}：${cmpReveal(prev, b) >= 0 ? '通过' : '失败'}）` : ''}`);

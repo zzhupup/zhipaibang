@@ -184,6 +184,8 @@ Page({
           title: o.title || '',
           titleCls: o.titleCls || '',
           body: o.body || '',
+          cards: o.cards || null,
+          reveal: o.reveal || null,
           actions: (o.actions || [{ label: '确定' }]).map((a, i) => ({
             label: a.label, cls: a.cls || '', idx: i, value: a.value,
           })),
