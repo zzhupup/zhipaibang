@@ -118,7 +118,7 @@ Page({
         if (!chip) return;
         const current = s.phase === 'chips' && color === c && !chip.dark;
         chipViews.push({
-          id: c, colorCls: c, starPos: STAR_POS[chip.star] || STAR_POS[1],
+          id: c, starCls: 'st' + chip.star, starPos: STAR_POS[chip.star] || STAR_POS[1],
           dark: !!chip.dark, current,
         });
       });
@@ -156,7 +156,7 @@ Page({
       alarmCards: [0, 1, 2].map(i => i < s.alarms ? 1 : 0),
       phase: s.phase, round: s.round,
       community: s.community, deckCount: s.deckCount, discardCount: s.discardCount,
-      centerChips: (s.centerChips || []).map(st => ({ star: st, starPos: STAR_POS[st] || STAR_POS[1] })),
+      centerChips: (s.centerChips || []).map(st => ({ star: st, starCls: 'st' + st, starPos: STAR_POS[st] || STAR_POS[1] })),
       seats, mode: s.mode, n: s.n,
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
       pillText: this.buildPill(s),

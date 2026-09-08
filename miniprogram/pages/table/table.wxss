@@ -230,3 +230,14 @@
 }
 .chip.red .starDot { color: #fff; }
 .chip.mini .starDot { font-size: 7px; }
+
+
+/* ---------- 星级配色（1~6 星颜色各异） ---------- */
+.chip.st1 { background: #95a5a6; }
+.chip.st2 { background: #4a90d9; }
+.chip.st3 { background: #52b788; }
+.chip.st4 { background: #f0c34e; }
+.chip.st5 { background: #ef8f2e; }
+.chip.st6 { background: #d64541; }
+.chip.st1 .starDot, .chip.st4 .starDot { color: #222; }
+.chip.st2 .starDot, .chip.st3 .starDot, .chip.st5 .starDot, .chip.st6 .starDot { color: #fff; }

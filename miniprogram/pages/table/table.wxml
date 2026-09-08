@@ -34,7 +34,7 @@
     </view>
     <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
     <view class="centerChips">
-      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
+      <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.starCls}}" hover-class="chipHover"
         catchtap="onCenterChip" data-star="{{item.star}}">
         <text wx:for="{{item.starPos}}" wx:for-item="st" wx:key="index" class="starDot" style="left:{{st.x}}%;top:{{st.y}}%">★</text>
       </view>
@@ -63,7 +63,7 @@
     <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">
       <block wx:for="{{p.chips}}" wx:for-item="ch" wx:key="id">
-        <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
+        <view class="chip mini {{ch.starCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
           catchtap="onSeatChip" data-i="{{p.i}}">
           <text wx:for="{{ch.starPos}}" wx:for-item="st" wx:key="index" class="starDot" style="left:{{st.x}}%;top:{{st.y}}%">★</text>
         </view>
