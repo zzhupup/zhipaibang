@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>纸牌帮 · 合作扑克劫案</title>
+<style>
+:root{
+  --felt1:#1d5c3f; --felt2:#144832; --panel:#0f2f22; --line:#2e7a58;
+  --gold:#e8c15a; --alarm:#d64541; --ink:#101613;
+  --white-chip:#e9e7df; --yellow-chip:#f2c53d; --orange-chip:#ef8f2e; --red-chip:#d64541;
+  --card-w:64px; --card-h:92px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  background:radial-gradient(ellipse at 50% 0%, var(--felt1), var(--felt2) 75%);
+  color:#eef3ef; min-height:100vh; padding-bottom:40px;
+}
+button{font-family:inherit; cursor:pointer;}
+.btn{
+  background:linear-gradient(#3d9b6d,#2a7a50); color:#fff; border:1px solid #57c48f;
+  border-radius:8px; padding:9px 20px; font-size:15px; transition:.15s;
+}
+.btn:hover{filter:brightness(1.12);}
+.btn.ghost{background:transparent; border:1px solid var(--line); color:#bfe3d0;}
+.btn.warn{background:linear-gradient(#c0524d,#a03a36); border-color:#e08580;}
+.btn.small{padding:4px 10px; font-size:13px; border-radius:6px;}
+[hidden]{display:none !important;}
+
+/* ---------- setup ---------- */
+#setup{max-width:720px; margin:40px auto; background:rgba(10,30,22,.85); border:1px solid var(--line);
+  border-radius:16px; padding:34px 40px; box-shadow:0 12px 40px rgba(0,0,0,.45);}
+#setup h1{font-size:34px; letter-spacing:6px; color:var(--gold); text-align:center;}
+#setup .sub{text-align:center; color:#9fc7b2; margin:6px 0 24px; letter-spacing:2px;}
+#setup h2{font-size:16px; color:var(--gold); margin:20px 0 10px; border-left:4px solid var(--gold); padding-left:10px;}
+.modeOpt,.cntOpt{display:flex; gap:10px; flex-wrap:wrap;}
+.modeOpt button,.cntOpt button{
+  background:rgba(255,255,255,.06); border:1px solid var(--line);
+  color:#d7eade; padding:10px 18px; border-radius:8px; font-size:15px;
+}
+.modeOpt button.sel,.cntOpt button.sel{background:linear-gradient(#3d9b6d,#2a7a50); border-color:#7dd8a8; font-weight:bold;}
+.nameRow{display:flex; gap:8px; flex-wrap:wrap;}
+.nameRow input{
+  background:rgba(255,255,255,.08); border:1px solid var(--line); color:#fff;
+  padding:8px 12px; border-radius:8px; font-size:14px; width:130px;
+}
+.rulesBrief{font-size:13px; color:#9fc7b2; line-height:1.8; margin-top:18px; background:rgba(0,0,0,.25); border-radius:10px; padding:14px 16px;}
+#startBtn{display:block; margin:26px auto 0; font-size:17px; padding:12px 46px;}
+
+/* ---------- header ---------- */
+#game{max-width:1180px; margin:0 auto; padding:14px 16px;}
+#hdr{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px;}
+#hdr .title{font-size:22px; letter-spacing:4px; color:var(--gold); font-weight:bold;}
+#heistInfo{font-size:14px; color:#cfe8da;}
+#tally{display:flex; gap:18px; align-items:center; margin-left:auto;}
+.tallyGroup{display:flex; gap:5px; align-items:center; font-size:13px; color:#bfe3d0;}
+.miniCard{width:30px; height:42px; border-radius:5px; border:2px solid #555; position:relative; transition:.4s;}
+.miniCard.vault{background:linear-gradient(135deg,#3a3a3a,#242424);}
+.miniCard.vault.gold{background:linear-gradient(135deg,#f0d060,#c9a227); border-color:#ffe9a0; box-shadow:0 0 10px rgba(232,193,90,.7);}
+.miniCard.alarm{background:linear-gradient(135deg,#3a3a3a,#242424);}
+.miniCard.alarm.red{background:linear-gradient(135deg,#e2574f,#a02a24); border-color:#ff9a90; box-shadow:0 0 10px rgba(214,69,65,.7);}
+.miniCard span{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
+.miniCard.alarm.red span::after{content:"🚨"; font-size:13px;}
+.miniCard.vault.gold span::after{content:"💰"; font-size:13px;}
+
+/* ---------- active card banner ---------- */
+#cardBanner{
+  display:flex; gap:12px; align-items:stretch; margin-bottom:12px;
+}
+#cardBanner:empty{display:none;}
+.activeCard{
+  flex:1; background:rgba(0,0,0,.35); border:1px dashed var(--gold); border-radius:10px;
+  padding:8px 14px; font-size:13px; line-height:1.6;
+}
+.activeCard b{color:var(--gold); font-size:14px;}
+.activeCard.challenge{border-color:#7fb2ff;} .activeCard.challenge b{color:#7fb2ff;}
+.activeCard.expert{border-color:#f0a0e8;} .activeCard.expert b{color:#f0a0e8;}
+#roundBanner{
+  background:rgba(0,0,0,.35); border-radius:10px; padding:8px 14px; font-size:14px;
+  color:#ffe9b0; display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+#roundBanner .rb{font-size:16px; font-weight:bold; color:var(--gold); letter-spacing:1px;}
+#roundBanner .hint{color:#a9cbbb; font-size:12.5px;}
+
+/* ---------- 圆桌舞台 ---------- */
+#stageScale{display:flex; justify-content:center; overflow:hidden; margin-top:6px;}
+#stage{position:relative; width:980px; height:720px; flex:none; transform-origin:top center;}
+#roundTable{
+  position:absolute; left:50%; top:50%; width:640px; height:430px; transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse at 50% 32%, #2f8a5b, #1d5f3d 62%, #124529);
+  border-radius:50%;
+  border:12px solid #5a3d23;
+  box-shadow:inset 0 0 46px rgba(0,0,0,.55), 0 16px 44px rgba(0,0,0,.55), 0 0 0 3px #3d2a18;
+}
+#roundTable::after{
+  content:""; position:absolute; inset:16px; border-radius:50%;
+  border:2px dashed rgba(255,255,255,.13); pointer-events:none;
+}
+#roundTable .feltMark{
+  position:absolute; left:50%; top:26px; transform:translateX(-50%);
+  color:rgba(255,233,176,.28); font-size:15px; letter-spacing:8px; font-weight:bold;
+}
+#centerArea{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:10px; z-index:5;
+}
+#communityRow{display:flex; gap:7px;}
+#communityRow .slot{
+  width:48px; height:68px; border:2px dashed rgba(255,255,255,.2);
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.28); font-size:10px; text-align:center;
+}
+#deckWrap{display:flex; gap:8px; align-items:center; color:#cfe8da; font-size:12px;}
+#centerChips{display:flex; gap:9px; flex-wrap:wrap; justify-content:center; min-height:46px; align-items:center; max-width:560px;}
+#centerChips .lbl{font-size:12.5px; color:#cfe8da; margin-right:4px; text-shadow:0 1px 3px rgba(0,0,0,.8);}
+#centerChips .chip{width:42px; height:42px;}
+
+/* ---------- cards ---------- */
+.card{
+  width:var(--card-w); height:var(--card-h); background:#fdfcf7; color:#111;
+  border-radius:8px; box-shadow:0 3px 8px rgba(0,0,0,.4);
+  position:relative; font-weight:bold; user-select:none; flex:none;
+}
+.card .corner{position:absolute; top:4px; left:6px; font-size:15px; line-height:1.05; text-align:center;}
+.card .corner.br{top:auto; left:auto; bottom:4px; right:6px; transform:rotate(180deg);}
+.card .pip{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:30px;}
+.card.red{color:#c8352e;}
+.card.back{
+  background:repeating-linear-gradient(45deg,#274e68 0 6px,#1d3d52 6px 12px);
+  border:4px solid #fdfcf7;
+}
+.card.back::after{content:"🃏"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; opacity:.55;}
+.card.knight{background:#dfe3df; color:#556;}
+.card.small{--card-w:46px; --card-h:66px;}
+.card.small .corner{font-size:12px;} .card.small .pip{font-size:22px;}
+.card.hl{outline:3px solid var(--gold); outline-offset:1px;}
+.card.dim{opacity:.45;}
+
+/* ---------- chips ---------- */
+.chip{
+  width:46px; height:46px; border-radius:50%; position:relative; flex:none;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  font-size:11px; font-weight:bold; color:#222;
+  box-shadow:0 3px 6px rgba(0,0,0,.45), inset 0 0 0 4px rgba(255,255,255,.55), inset 0 0 0 6px rgba(0,0,0,.12);
+  border:2px solid rgba(0,0,0,.35); transition:transform .15s;
+}
+.chip .stars{font-size:12px; letter-spacing:-1px;}
+.chip.white{background:var(--white-chip);}
+.chip.yellow{background:var(--yellow-chip);}
+.chip.orange{background:var(--orange-chip);}
+.chip.red{background:var(--red-chip); color:#fff;}
+.chip.dark{filter:brightness(.45) saturate(.7);}
+.chip.dark::after{content:"🔒"; position:absolute; font-size:13px; right:-2px; bottom:-2px;}
+.chip.takable{cursor:pointer;}
+.chip.takable:hover{transform:translateY(-4px) scale(1.06); box-shadow:0 6px 14px rgba(0,0,0,.5), inset 0 0 0 4px rgba(255,255,255,.55);}
+.chip.disabled{opacity:.35; cursor:not-allowed;}
+
+/* ---------- 座位（环绕圆桌） ---------- */
+#seats{position:absolute; inset:0; pointer-events:none; z-index:10;}
+.seat{
+  position:absolute; width:192px; transform:translate(-50%,-50%);
+  background:rgba(6,22,16,.88); border:1px solid var(--line); border-radius:12px; padding:8px 10px;
+  display:flex; flex-direction:column; gap:6px; pointer-events:auto;
+  box-shadow:0 8px 22px rgba(0,0,0,.5);
+}
+.seat.activeTurn{border-color:var(--gold); box-shadow:0 0 12px rgba(232,193,90,.35);}
+.seat .seatHead{display:flex; align-items:center; gap:8px;}
+.seat .pname{font-weight:bold; font-size:15px; color:#ffe9b0;}
+.seat .badge{font-size:11px; background:rgba(232,193,90,.2); color:var(--gold); border-radius:4px; padding:2px 6px;}
+.seat .eye{
+  margin-left:auto; background:rgba(255,255,255,.1); border:1px solid var(--line); color:#cfe8da;
+  border-radius:6px; padding:3px 9px; font-size:12px;
+}
+.seat .eye:hover{background:rgba(255,255,255,.2);}
+.seat .holeRow{display:flex; gap:5px; min-height:48px; align-items:center; justify-content:center;}
+.seat .holeRow .card{--card-w:38px; --card-h:54px;}
+.seat .holeRow .card .corner{font-size:10px;} .seat .holeRow .card .pip{font-size:16px;}
+.chipLine{display:flex; gap:5px; align-items:center; min-height:28px; flex-wrap:wrap; justify-content:center;}
+.chipLine .rl{font-size:11px; color:#8fb8a3;}
+.chip.mini{width:28px; height:28px; font-size:8px; box-shadow:0 2px 4px rgba(0,0,0,.45), inset 0 0 0 3px rgba(255,255,255,.55);}
+.chip.mini .stars{font-size:8px; letter-spacing:0;}
+.returnBtn{
+  background:rgba(214,69,65,.25); border:1px solid #d64541; color:#ffb3ae;
+  font-size:11px; border-radius:5px; padding:2px 7px;
+}
+.returnBtn:hover{background:rgba(214,69,65,.5); color:#fff;}
+.seat .msg{font-size:12px; color:#a9cbbb; min-height:16px;}
+
+/* ---------- 顶部徽标（轮次 / 生效卡牌） ---------- */
+.hdrPill{
+  cursor:pointer; font-size:13px; padding:5px 14px; border-radius:20px; white-space:nowrap;
+  background:rgba(232,193,90,.14); border:1px solid rgba(232,193,90,.5); color:#ffe9b0;
+  transition:.15s; user-select:none;
+}
+.hdrPill:hover{background:rgba(232,193,90,.3);}
+.hdrPill.card{background:rgba(240,160,232,.12); border-color:rgba(240,160,232,.5); color:#f0a0e8;}
+.hdrPill.card:hover{background:rgba(240,160,232,.25);}
+
+/* ---------- 座位确认按钮 ---------- */
+.confirmBtn{
+  align-self:center; font-size:13px; padding:5px 22px; border-radius:8px;
+  background:rgba(255,255,255,.08); border:1px solid var(--line); color:#cfe8da; transition:.15s;
+}
+.confirmBtn:hover:not(:disabled){border-color:var(--gold); color:#ffe9b0;}
+.confirmBtn.on{background:linear-gradient(#3d9b6d,#2a7a50); border-color:#7dd8a8; color:#fff; font-weight:bold;}
+.confirmBtn:disabled{opacity:.3; cursor:not-allowed;}
+
+/* ---------- 日志弹窗行 ---------- */
+.logLine{font-size:13px; line-height:1.9; color:#cfe8da; border-bottom:1px dashed rgba(255,255,255,.1); padding:3px 2px;}
+.logLine.em{color:var(--gold);}
+
+/* ---------- log ---------- */
+
+/* ---------- modal ---------- */
+#modalRoot{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:100; padding:20px;}
+#modalRoot.show{display:flex;}
+#modalBox{
+  background:linear-gradient(#173c2c,#0f2b1f); border:1px solid var(--line); border-radius:16px;
+  max-width:680px; width:100%; max-height:88vh; overflow-y:auto; padding:26px 30px;
+  box-shadow:0 18px 60px rgba(0,0,0,.6);
+}
+#modalBox h2{color:var(--gold); font-size:19px; margin-bottom:14px; letter-spacing:1px;}
+#modalBox h2.priv{color:#ff9a90;}
+#modalBox .body{font-size:14px; line-height:1.9; color:#e3f0e8;}
+#modalBox .acts{display:flex; gap:12px; justify-content:flex-end; margin-top:22px; flex-wrap:wrap;}
+#modalBox .cardsRow{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+#modalBox select,#modalBox input[type=text]{
+  background:rgba(255,255,255,.1); border:1px solid var(--line); color:#fff;
+  padding:8px 10px; border-radius:7px; font-size:14px;
+}
+.vsRow{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:8px 0;}
+.vsRow .vslbl{font-size:12px; color:#9fc7b2; width:100%;}
+.cmpTag{font-size:13px; padding:4px 12px; border-radius:6px; font-weight:bold;}
+.cmpTag.ok{background:rgba(61,155,109,.3); color:#8fe6b4; border:1px solid #57c48f;}
+.cmpTag.bad{background:rgba(214,69,65,.3); color:#ffb3ae; border:1px solid #e08580;}
+.handName{color:var(--gold); font-weight:bold;}
+.noteBox{background:rgba(0,0,0,.3); border-left:3px solid var(--gold); padding:10px 14px; font-size:13px; margin:10px 0; line-height:1.8;}
+.rankTable{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
+.rankTable td{border:1px solid var(--line); padding:6px 10px;}
+.rankTable td:first-child{color:var(--gold); white-space:nowrap;}
+.privWarn{background:rgba(214,69,65,.15); border:1px solid #d64541; border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:14px; color:#ffd2cd; text-align:center;}
+.pickGrid{display:flex; gap:10px; flex-wrap:wrap;}
+.pickGrid button{
+  background:rgba(255,255,255,.07); border:1px solid var(--line); color:#e3f0e8;
+  padding:10px 16px; border-radius:8px; font-size:14px;
+}
+.pickGrid button:hover{border-color:var(--gold); color:#ffe9b0;}
+.sumLine{display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,.15); padding:5px 2px; font-size:14px;}
+@media (max-width:760px){
+  :root{--card-w:46px; --card-h:66px;}
+  .card .corner{font-size:12px;} .card .pip{font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 设置界面 ============ -->
+<section id="setup">
+  <h1>纸 牌 帮</h1>
+  <div class="sub">合作扑克劫案 · 网页版</div>
+
+  <h2>游戏模式</h2>
+  <div class="modeOpt" id="modeOpt">
+    <button data-v="standard" class="sel">标准游戏</button>
+    <button data-v="advanced">进阶模式（挑战牌 & 专家牌）</button>
+  </div>
+
+  <h2>玩家人数（3 ~ 6 人，同一设备轮流操作）</h2>
+  <div class="cntOpt" id="cntOpt">
+    <button data-v="3" class="sel">3 人</button>
+    <button data-v="4">4 人</button>
+    <button data-v="5">5 人</button>
+    <button data-v="6">6 人</button>
+  </div>
+
+  <h2>玩家名字</h2>
+  <div class="nameRow" id="nameRow"></div>
+
+  <div class="rulesBrief">
+    <b>玩法速记：</b>一局包含 3~5 次"劫案"，每次劫案 4 轮（翻牌前 → 翻牌 → 转牌 → 河牌）。
+    每轮翻开公共牌后，全员各自拿取 1 枚该轮颜色的筹码——<b>星数 = 你自认的牌型排名</b>（6 星最强、1 星最弱）。
+    筹码可从桌面中央拿，也可以从别人面前拿走，或把自己面前的放回中央（每种颜色面前至多 1 枚）。<br>
+    <b>摊牌：</b>按红色筹码星数从小到大，依次亮出底牌并展示最强 5 张牌型。每个人的牌型<b>不得弱于</b>上一位（打平可以）！
+    全部正确 → 翻开 1 张金库牌（成功）；有人更弱 → 翻开 1 张警报牌（失败）。<br>
+    <b>终局：</b>3 张金库翻金 = 胜利；3 张警报翻红 = 失败。全程禁止用语言、手势透露自己的手牌信息！
+  </div>
+  <button class="btn" id="startBtn">开始游戏</button>
+</section>
+
+<!-- ============ 游戏界面 ============ -->
+<section id="game" hidden>
+  <div id="hdr">
+    <div class="title">纸牌帮</div>
+    <div id="heistInfo"></div>
+    <div id="tally"></div>
+    <span class="hdrPill" id="roundPill" title="点击查看轮次详情与筹码确认状态"></span>
+    <span class="hdrPill card" id="cardPill" hidden title="点击查看生效中的挑战牌/专家牌"></span>
+    <button class="btn ghost small" id="logBtn">📜 日志</button>
+    <button class="btn ghost small" id="rulesBtn">规则速查</button>
+    <button class="btn ghost small" id="restartBtn">重新开始</button>
+  </div>
+
+  <div id="stageScale">
+    <div id="stage">
+      <div id="roundTable"><div class="feltMark">纸 牌 帮</div></div>
+      <div id="centerArea">
+        <div id="communityRow"></div>
+        <div id="deckWrap"></div>
+        <div id="centerChips"></div>
+      </div>
+      <div id="seats"></div>
+    </div>
+  </div>
+
+<!-- 游戏日志改为按需弹窗，不再常驻页面 -->
+</section>
+
+<div id="modalRoot"><div id="modalBox"></div></div>
+
+<script>
+'use strict';
+/* ================================================================
+   纸牌帮 · 合作扑克劫案 —— 网页版
+   规则来源：《纸牌帮》合作扑克游戏中文规则书（标准 + 进阶模式）
+   ================================================================ */
+
+/* ---------------- 基础工具 ---------------- */
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+/* ---------------- 牌与牌型 ---------------- */
+const SUITS = ['♣', '♦', '♥', '♠'];           // 0..3
+const RED_SUITS = [1, 2];                       // ♦ ♥
+const RANK_TXT = { 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+const HAND_NAMES = ['高牌', '一对', '两对', '三条', '顺子', '同花', '葫芦', '四条', '同花顺', '皇家同花顺'];
+
+function freshDeck() {
+  const d = [];
+  for (let s = 0; s < 4; s++) for (let r = 2; r <= 14; r++) d.push({ r, s });
+  return shuffle(d);
+}
+function cardText(c) {
+  if (c.s === 4) return '骑士J（无花色）';
+  return RANK_TXT[c.r] + SUITS[c.s];
+}
+function cardEl(c, cls) {
+  const d = el('div', 'card' + (cls ? ' ' + cls : ''));
+  if (c === null) { d.classList.add('back'); return d; }
+  if (c.s === 4) { // 骑士J：无花色
+    d.classList.add('knight');
+    d.innerHTML = `<div class="corner">J<br>♛</div><div class="pip">♛</div><div class="corner br">J<br>♛</div>`;
+    return d;
+  }
+  if (RED_SUITS.includes(c.s)) d.classList.add('red');
+  const t = RANK_TXT[c.r] + '<br>' + SUITS[c.s];
+  d.innerHTML = `<div class="corner">${t}</div><div class="pip">${SUITS[c.s]}</div><div class="corner br">${t}</div>`;
+  return d;
+}
+
+/* 5 张牌打分：返回 [类别, 决胜张...] 可按字典序比较 */
+function score5(c) {
+  const rs = c.map(x => x.r).sort((a, b) => b - a);
+  const isFlush = c.every(x => x.s === c[0].s) && c[0].s !== 4;   // 骑士J无花色
+  const uniq = [...new Set(rs)];
+  let sHigh = 0;
+  if (uniq.length === 5) {
+    if (uniq[0] - uniq[4] === 4) sHigh = uniq[0];                 // 普通顺子
+    else if (uniq[0] === 14 && uniq[1] === 5 && uniq[4] === 2) sHigh = 5; // A-2-3-4-5
+  }
+  const cnt = {}; for (const r of rs) cnt[r] = (cnt[r] || 0) + 1;
+  const gs = Object.keys(cnt).map(r => ({ r: +r, n: cnt[r] })).sort((a, b) => b.n - a.n || b.r - a.r);
+  if (isFlush && sHigh) return [8, sHigh];
+  if (isFlush) return [5, ...rs];
+  if (sHigh) return [4, sHigh];
+  if (gs[0].n >= 4) return [7, gs[0].r, gs[1] ? gs[1].r : 0];  // 5张同点（骑士J+四条）按四条+胜负牌计
+  if (gs[0].n === 3 && gs[1].n === 2) return [6, gs[0].r, gs[1].r];
+  if (gs[0].n === 3) return [3, gs[0].r, gs[1].r, gs[2].r];
+  if (gs[0].n === 2 && gs[1].n === 2) return [2, gs[0].r, gs[1].r, gs[2].r];
+  if (gs[0].n === 2) return [1, gs[0].r, gs[1].r, gs[2].r, gs[3].r];
+  return [0, ...rs];
+}
+function lex(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+function combo5(n) {
+  const out = [];
+  (function rec(st, cur) {
+    if (cur.length === 5) { out.push(cur.slice()); return; }
+    for (let i = st; i < n; i++) { cur.push(i); rec(i + 1, cur); cur.pop(); }
+  })(0, []);
+  return out;
+}
+/* 从任意张里选最强 5 张（支持打手强化：一对 → 最强一对 A） */
+function best5(cards, striker) {
+  if (cards.length < 5) return null;
+  let best = null, bestScore = null;
+  for (const cb of combo5(cards.length)) {
+    const hand = cb.map(i => cards[i]);
+    const s = score5(hand);
+    if (!bestScore || lex(s, bestScore) > 0) { bestScore = s; best = hand; }
+  }
+  if (striker && bestScore[0] === 1) { // 打手：将一对变为最强的一对
+    const ranks = [...new Set(cards.map(c => c.r))].sort((a, b) => b - a);
+    const kick = [14, ...ranks.filter(r => r !== 14).slice(0, 3)];
+    bestScore = [1, ...kick];
+  }
+  return { cards: best, score: bestScore };
+}
+function handName(score) {
+  return score[0] === 8 && score[1] === 14 ? '皇家同花顺' : HAND_NAMES[score[0]];
+}
+/* 翻牌前（只有底牌时）的粗略牌型名 */
+function partialHandName(hole) {
+  for (let a = 0; a < hole.length; a++)
+    for (let b = a + 1; b < hole.length; b++)
+      if (hole[a].r === hole[b].r) return '一对 ' + RANK_TXT[hole[a].r];
+  const hi = Math.max(...hole.map(c => c.r));
+  return '高牌 ' + RANK_TXT[hi];
+}
+
+/* ---------------- 挑战牌 / 专家牌定义 ---------------- */
+const CHALLENGES = {
+  1: { name: '快速入口', text: '将用于本次劫案的白色筹码放在一边。在第一轮中，分发底牌并直接进入第2轮。' },
+  2: { name: '噪声传感器', text: '将第1轮、第2轮和第3轮的1星筹码翻至深色面。这些筹码在从桌面中央被取走后，就不能放回桌面中央，也不能被其他玩家拿取。' },
+  3: { name: '运动侦测器', text: '如果第2轮的公共牌中至少有一张为J、Q或K，那么：持有白色1星筹码（第1轮）的玩家必须将自己的底牌正面朝下放入弃牌堆，并从牌堆抽取两张新的底牌。' },
+  4: { name: '视网膜扫描', text: '在持有最多星数红色筹码的玩家展示自己的手牌之前，剩余玩家必须共同商讨并猜测该玩家的一张底牌的数值（从2到A）。如果猜测错误，无论红色筹码分配排序是否正确，本次劫案都视为失败。' },
+  5: { name: '陶瓷敲离', text: '第3轮不会分配橙色筹码。翻开第四张公共牌后直接进入第4轮。' },
+  6: { name: '通风管道', text: '将第1、2和3轮最多星数的筹码翻至深色面。这些筹码在从桌面中央被取走后，就不能放回桌面中央，也不能被其他玩家拿取。' },
+  7: { name: '激光绊线', text: '如果第2轮的公共牌中没有J、Q、K，那么：持有最多星数白色筹码（第1轮）的玩家必须将自己的底牌正面朝下放入弃牌堆，并从牌堆抽取两张新的底牌。' },
+  8: { name: '断电', text: '第2轮开始时，所有玩家必须弃置第1轮中获得的所有筹码；第3轮开始时，弃置第2轮的所有筹码；第4轮开始时，弃置第3轮的所有筹码。这意味着你们必须记忆前几轮的筹码分布情况。' },
+  9: { name: '指纹扫描', text: '在持有最多星数红色筹码的玩家展示自己的手牌之前，剩余玩家必须共同商讨并猜测该玩家的牌型（从高牌到皇家同花顺）。该玩家不能参与讨论或给出提示。如果猜测错误，本次劫案都视为失败。' },
+  10: { name: '监控摄像头', text: '每位玩家的底牌数量将从两张增至三张！摊牌时，用自己的三张底牌和五张公共牌组成最强的五张卡牌组合（而非平时的2+5）。' }
+};
+const EXPERTS = {
+  1: { name: '线人', text: '所有玩家共同指定某位玩家向另一位玩家秘密展示自己的一张底牌。展示对象不可以公布自己获得的底牌信息。' },
+  2: { name: '接应司机', text: '所有玩家共同指定某位玩家公布自己当前的牌型（从高牌到皇家同花顺）。公布时不能透露牌型以外的其他信息。' },
+  3: { name: '金主', text: '在第1轮分发底牌后，每位玩家公布自己底牌中的"人头牌"（J、Q、K）张数。' },
+  4: { name: '主谋', text: '所有玩家共同指定某位玩家公布自己底牌中某个数值的卡牌张数。' },
+  5: { name: '黑客', text: '所有玩家共同指定某位玩家从牌堆抽一张牌加入自己的底牌。随后，该玩家必须将自己的一张底牌正面朝下放入弃牌堆（可以放回刚抽到的这张牌）。' },
+  6: { name: '中间人', text: '在第1轮分发底牌后，每位玩家选择自己的一张底牌，并同时将其传递给左边的玩家。' },
+  7: { name: '骑士', text: '所有玩家共同指定某位玩家将专家牌"骑士"加入自己的底牌（视为一张没有花色的 J，无法用于组成同花）。随后，该玩家必须将除"骑士"以外自己的一张底牌正面朝下放入弃牌堆。' },
+  8: { name: '数学天才', text: '在第1轮分发底牌后，每位玩家公布自己底牌数值之和（2-10 对应 2-10，J、Q、K 均算 10，A 算 11）。' },
+  9: { name: '骗子', text: '在第1轮分发底牌后，每位玩家把底牌放在桌面中央叠成一堆，洗混这些牌并重新分发给玩家。' },
+  10: { name: '打手', text: '所有玩家共同指定某位玩家拿取专家牌"打手"。在摊牌时，该玩家的"一对"会击败所有与自己牌型排名（类别）相同的其他玩家。' }
+};
+
+/* ---------------- 全局状态 ---------------- */
+const S = {
+  screen: 'setup',
+  mode: 'standard',
+  n: 3,
+  names: [],
+  players: [],          // {name, hole:[], chips:{white,yellow,orange,red}, striker, msg}
+  deck: [], discard: [],
+  community: [],
+  heist: 0,
+  vaults: 0, alarms: 0,
+  round: 0, phase: 'idle',
+  confirmed: [], confirmHinted: false,
+  logArr: [],
+  chalDeck: [], expDeck: [],
+  activeChallenge: null,   // id or null
+  activeExpert: null,      // id or null
+  lastHeistResult: null,
+  over: false,
+};
+const ROUND_COLOR = { 1: 'white', 2: 'yellow', 3: 'orange', 4: 'red' };
+const ROUND_NAME = { 1: '第1轮 · 翻牌前', 2: '第2轮 · 翻牌', 3: '第3轮 · 转牌', 4: '第4轮 · 河牌' };
+const COLOR_TXT = { white: '白色', yellow: '黄色', orange: '橙色', red: '红色' };
+
+/* ---------------- 模态框 ---------------- */
+function modal({ title, titleCls, body, actions, noClose }) {
+  return new Promise(resolve => {
+    const root = $('#modalRoot'), box = $('#modalBox');
+    box.innerHTML = '';
+    if (title) box.appendChild(el('h2', titleCls || '', title));
+    const b = el('div', 'body'); b.innerHTML = body || ''; box.appendChild(b);
+    const acts = el('div', 'acts');
+    (actions || [{ label: '确定' }]).forEach(a => {
+      const btn = el('button', 'btn' + (a.cls ? ' ' + a.cls : ''), a.label);
+      btn.onclick = () => { root.classList.remove('show'); resolve(a.value); };
+      acts.appendChild(btn);
+    });
+    box.appendChild(acts);
+    root.classList.add('show');
+  });
+}
+function closeModal() { $('#modalRoot').classList.remove('show'); }
+
+/* ---------------- 日志（弹窗制） ---------------- */
+S.logArr = [];
+function log(msg, em) {
+  S.logArr.unshift({ msg, em });
+  if (S.logArr.length > 300) S.logArr.pop();
+}
+function showLog() {
+  const body = S.logArr.length
+    ? S.logArr.map(l => `<div class="logLine${l.em ? ' em' : ''}">${l.msg}</div>`).join('')
+    : '<div class="logLine">暂无日志</div>';
+  modal({ title: '📜 游戏日志', body, actions: [{ label: '关闭' }] });
+}
+/* ---------------- 轮次详情（弹窗制） ---------------- */
+function showRoundInfo() {
+  let body = '';
+  // 生效卡牌
+  if (S.activeChallenge) {
+    const c = CHALLENGES[S.activeChallenge];
+    body += `<div class="activeCard challenge" style="margin-bottom:10px"><b>🃏 挑战牌 · ${c.name}</b><br>${c.text}</div>`;
+  }
+  if (S.activeExpert) {
+    const c = EXPERTS[S.activeExpert];
+    body += `<div class="activeCard expert" style="margin-bottom:10px"><b>👔 专家牌 · ${c.name}</b><br>${c.text}</div>`;
+  }
+  // 轮次状态
+  if (S.phase === 'chips') {
+    const color = ROUND_COLOR[S.round];
+    const extra = color === 'white' ? '拿到星数越多 = 你自认牌型越强'
+      : color === 'red' ? '红色筹码星数决定摊牌顺序（从小到大）！'
+      : '延续你的排名预期';
+    const haveCnt = S.players.filter(p => p.chips[color]).length;
+    const cfCnt = S.confirmed.filter(Boolean).length;
+    body += `<div><b style="color:var(--gold)">${ROUND_NAME[S.round]}</b> — ${COLOR_TXT[color]}筹码分配中</div>
+      <div style="font-size:13px;color:#a9cbbb;margin:6px 0">${extra}。每人面前每种颜色至多 1 枚；可拿中央的，也可拿别人面前的，或把自己面前的放回。全部确认后才进入下一轮，筹码变动后需重新确认。</div>
+      <div class="noteBox">已持筹码：${haveCnt}/${S.n} · 已确认：<b style="color:var(--gold)">${cfCnt}/${S.n}</b></div>`;
+  } else if (S.phase === 'showdown') {
+    body += `<div><b style="color:var(--gold)">摊牌</b></div><div style="font-size:13px;color:#a9cbbb;margin-top:6px">按红色筹码星数从小到大依次亮牌，牌型不得弱于上一位（打平可以）</div>`;
+  } else {
+    body += `<div><b style="color:var(--gold)">${ROUND_NAME[S.round] || '劫案准备'}</b></div>`;
+  }
+  // 公共牌概况
+  if (S.community.length) {
+    body += `<div style="margin-top:10px;font-size:13px;color:#a9cbbb">已翻公共牌（${S.community.length}/5）：${S.community.map(cardText).join('、')}</div>`;
+  }
+  modal({ title: '🎯 当前轮次', body, actions: [{ label: '关闭' }] });
+}
+function renderPill() {
+  const rp = $('#roundPill'), cp = $('#cardPill');
+  if (S.phase === 'chips') {
+    const color = ROUND_COLOR[S.round];
+    const cfCnt = S.confirmed ? S.confirmed.filter(Boolean).length : 0;
+    rp.textContent = `${ROUND_NAME[S.round]} · 确认 ${cfCnt}/${S.n}`;
+  } else if (S.phase === 'showdown') {
+    rp.textContent = '摊牌中';
+  } else {
+    rp.textContent = ROUND_NAME[S.round] || '劫案准备';
+  }
+  if (S.activeChallenge || S.activeExpert) {
+    const names = [];
+    if (S.activeChallenge) names.push('🃏 ' + CHALLENGES[S.activeChallenge].name);
+    if (S.activeExpert) names.push('👔 ' + EXPERTS[S.activeExpert].name);
+    cp.textContent = names.join(' + ');
+    cp.hidden = false;
+  } else cp.hidden = true;
+}
+
+/* ---------------- 渲染 ---------------- */
+function render() {
+  if (S.screen !== 'game') return;
+  renderHeader(); renderPill(); renderTable(); renderSeats(); fitStage();
+}
+function renderHeader() {
+  $('#heistInfo').innerHTML = `第 <b style="color:var(--gold)">${S.heist}</b> 次劫案 · ${S.mode === 'advanced' ? '进阶模式' : '标准游戏'} · ${S.n} 位帮众`;
+  let t = '<div class="tallyGroup">金库';
+  for (let i = 0; i < 3; i++) t += `<div class="miniCard vault ${i < S.vaults ? 'gold' : ''}"><span></span></div>`;
+  t += '</div><div class="tallyGroup">警报';
+  for (let i = 0; i < 3; i++) t += `<div class="miniCard alarm ${i < S.alarms ? 'red' : ''}"><span></span></div>`;
+  t += '</div>';
+  $('#tally').innerHTML = t;
+}
+function renderTable() {
+  // 公共牌（圆桌中央，小尺寸）
+  const cr = $('#communityRow'); cr.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const slot = el('div', 'slot');
+    if (S.community[i]) slot.appendChild(cardEl(S.community[i], 'small'));
+    else slot.textContent = '公共牌';
+    cr.appendChild(slot);
+  }
+  // 牌堆
+  $('#deckWrap').innerHTML = `<div class="card back small"></div><span>牌堆 ${S.deck.length} 张 · 弃牌 ${S.discard.length} 张</span>`;
+  // 中央筹码
+  const cc = $('#centerChips'); cc.innerHTML = '';
+  if (S.phase === 'chips') {
+    const color = ROUND_COLOR[S.round];
+    cc.appendChild(el('span', 'lbl', `${COLOR_TXT[color]}筹码（自由拿取，无回合顺序）：`));
+    for (let star = 1; star <= S.n; star++) {
+      if (!S.centerChips.has(star)) continue;
+      const c = el('div', `chip ${color} takable`);
+      c.innerHTML = `<span class="stars">${'★'.repeat(star)}</span>`;
+      c.title = `拿取 ${star} 星${COLOR_TXT[color]}筹码`;
+      c.onclick = () => takeCenter(star);
+      cc.appendChild(c);
+    }
+    if (S.centerChips.size === 0) cc.appendChild(el('span', 'lbl', '（中央已没有筹码）'));
+  } else {
+    cc.appendChild(el('span', 'lbl', S.phase === 'showdown' ? '摊牌进行中…' : ' '));
+  }
+}
+function chipEl(chip, color, mini, onclick) {
+  if (!chip) return null;
+  const c = el('div', `chip ${color}${mini ? ' mini' : ''}${chip.dark ? ' dark' : ''}`);
+  c.innerHTML = `<span class="stars">${'★'.repeat(chip.star)}</span>`;
+  if (onclick && !chip.dark) { c.classList.add('takable'); c.onclick = onclick; }
+  else if (onclick && chip.dark) c.classList.add('disabled');
+  return c;
+}
+function renderSeats() {
+  const wrap = $('#seats'); wrap.innerHTML = '';
+  const n = S.players.length;
+  if (n === 0) return;
+  const CX = 490, CY = 360, RX = 390, RY = 278;   // 座位环绕椭圆（舞台 980x720 中心）
+  S.players.forEach((p, i) => {
+    const seat = el('div', 'seat' + (S.phase === 'showdown' && S.showIdx === i ? ' activeTurn' : ''));
+    // 环绕位置：玩家1在正下方（6点钟），按逆时针（向右）依次排开
+    const ang = (Math.PI / 2) + (i * 2 * Math.PI / n);
+    const x = CX + RX * Math.cos(ang);
+    const y = CY + RY * Math.sin(ang);
+    seat.style.left = x + 'px';
+    seat.style.top = y + 'px';
+    // 头部
+    const head = el('div', 'seatHead');
+    head.appendChild(el('span', 'pname', p.name));
+    if (p.striker) head.appendChild(el('span', 'badge', '👊 打手'));
+    const eye = el('button', 'eye', '👁');
+    eye.title = p.name + ' 查看底牌';
+    eye.onclick = () => peekPlayer(i);
+    head.appendChild(eye);
+    seat.appendChild(head);
+    // 底牌（背面）
+    const hr = el('div', 'holeRow');
+    p.hole.forEach(() => hr.appendChild(cardEl(null)));
+    seat.appendChild(hr);
+    // 筹码行（单行：白→黄→橙→红）
+    const line = el('div', 'chipLine');
+    ['white', 'yellow', 'orange', 'red'].forEach(color => {
+      if (!p.chips[color]) return;
+      const isCurrent = S.phase === 'chips' && ROUND_COLOR[S.round] === color;
+      if (isCurrent && !p.chips[color].dark) {
+        // 当前轮筹码：点击可被其他玩家拿走；旁边带"放回"按钮
+        const holder = el('div', 'chipLine');
+        holder.style.flexWrap = 'nowrap';
+        const ce = chipEl(p.chips[color], color, true);
+        ce.style.cursor = 'pointer';
+        ce.title = '点击拿走这枚筹码';
+        ce.onclick = () => takeFromPlayer(i);
+        holder.appendChild(ce);
+        const rb = el('button', 'returnBtn', '↩');
+        rb.title = '把你面前的这枚筹码放回桌面中央';
+        rb.onclick = () => returnChip(i);
+        holder.appendChild(rb);
+        line.appendChild(holder);
+      } else {
+        line.appendChild(chipEl(p.chips[color], color, true));
+      }
+    });
+    if (!line.children.length) line.appendChild(el('span', 'rl', '暂无筹码'));
+    seat.appendChild(line);
+    // 确认按钮（筹码分配阶段）：持筹才可确认；确认后筹码变动会自动重置
+    if (S.phase === 'chips') {
+      const color = ROUND_COLOR[S.round];
+      const has = !!p.chips[color];
+      const cb = el('button', 'confirmBtn' + (S.confirmed[i] ? ' on' : ''),
+        S.confirmed[i] ? '✔ 已确认' : (has ? '确认' : '先拿一枚筹码'));
+      cb.disabled = !has || S.confirmed[i];
+      if (S.confirmed[i]) { cb.disabled = false; cb.title = '点击取消确认'; }
+      cb.onclick = () => confirmPlayer(i);
+      seat.appendChild(cb);
+    }
+    if (p.msg) seat.appendChild(el('div', 'msg', p.msg));
+    wrap.appendChild(seat);
+  });
+}
+/* 舞台缩放适配窗口 */
+function fitStage() {
+  const st = $('#stage'), wrapEl = $('#stageScale');
+  if (!st || S.screen !== 'game') return;
+  const s = Math.min(1, (window.innerWidth - 16) / 980, (window.innerHeight - 250) / 720);
+  st.style.transform = 'scale(' + Math.max(s, 0.35) + ')';
+  wrapEl.style.height = (720 * Math.max(s, 0.35)) + 'px';
+}
+window.addEventListener('resize', fitStage);
+function setMsg(i, msg) { S.players[i].msg = msg || ''; }
+
+/* ---------------- 隐私查看底牌 ---------------- */
+function peekPlayer(i) {
+  const p = S.players[i];
+  const pm = modal({
+    title: `⚠ 请其他玩家回避 — ${p.name} 查看底牌`, titleCls: 'priv',
+    body: `<div class="privWarn">其他玩家请移开视线！</div>
+      <div class="cardsRow" id="peekCards"></div>
+      <div id="peekInfo" style="margin-top:6px"></div>`,
+    actions: [{ label: '看完了，隐藏' }]
+  });
+  buildPeekContent(i);   // modal DOM 已同步插入，可立即填充
+  return pm.then(() => { setMsg(i, ''); render(); });
+}
+function buildPeekContent(i) {
+  // 在 modal 打开后填充内容（因为需要 DOM）
+  const p = S.players[i];
+  const row = $('#peekCards'); if (!row) return;
+  row.innerHTML = '';
+  p.hole.forEach(c => row.appendChild(cardEl(c)));
+  const info = $('#peekInfo');
+  if (S.community.length >= 3) {
+    const b = best5([...p.hole, ...S.community], p.striker);
+    info.innerHTML = `你当前的牌型：<span class="handName">${handName(b.score)}</span>（底牌 + 公共牌中最强 5 张，仅供参考，禁止告诉别人）`;
+  } else {
+    info.innerHTML = `你目前的底牌组合：<span class="handName">${partialHandName(p.hole)}</span>（仅供参考，禁止告诉别人）`;
+  }
+}
+
+/* ---------------- 开局 ---------------- */
+$('#modeOpt').addEventListener('click', e => {
+  if (e.target.dataset.v) {
+    S.mode = e.target.dataset.v;
+    [...$('#modeOpt').children].forEach(b => b.classList.toggle('sel', b === e.target));
+  }
+});
+$('#cntOpt').addEventListener('click', e => {
+  if (e.target.dataset.v) {
+    S.n = +e.target.dataset.v;
+    [...$('#cntOpt').children].forEach(b => b.classList.toggle('sel', b === e.target));
+    buildNameInputs();
+  }
+});
+function buildNameInputs() {
+  const row = $('#nameRow'); row.innerHTML = '';
+  for (let i = 0; i < S.n; i++) {
+    const inp = el('input'); inp.type = 'text'; inp.placeholder = '玩家 ' + (i + 1);
+    inp.value = S.names[i] || '';
+    inp.oninput = () => S.names[i] = inp.value;
+    row.appendChild(inp);
+  }
+}
+buildNameInputs();
+
+$('#startBtn').onclick = () => {
+  S.names = [...$('#nameRow').children].map((inp, i) => inp.value.trim() || ('玩家' + (i + 1)));
+  S.players = S.names.map(n => ({ name: n, hole: [], chips: { white: null, yellow: null, orange: null, red: null }, striker: false, msg: '' }));
+  S.heist = 0; S.vaults = 0; S.alarms = 0; S.over = false;
+  S.chalDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];  // 首次按 1-10 顺序
+  S.expDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  S.activeChallenge = null; S.activeExpert = null;
+  $('#setup').hidden = true; $('#game').hidden = false;
+  S.logArr = [];
+  S.screen = 'game';
+  log('游戏开始！一局共 3~5 次劫案，成功 3 次即胜利。', true);
+  startHeist();
+};
+$('#restartBtn').onclick = async () => {
+  if (!await modal({ title: '重新开始', body: '确定要放弃当前对局并重新开始吗？', actions: [{ label: '确定重开', value: 1, cls: 'warn' }, { label: '取消' }] })) return;
+  location.reload();
+};
+$('#rulesBtn').onclick = () => showRules();
+$('#logBtn').onclick = () => showLog();
+$('#roundPill').onclick = () => showRoundInfo();
+$('#cardPill').onclick = () => showRoundInfo();
+
+async function showRules() {
+  let table = '';
+  for (let i = 0; i < 10; i++) table += `<tr><td>${HAND_NAMES[i]}</td><td>${RULE_DESC[i]}</td></tr>`;
+  await modal({
+    title: '规则速查',
+    body: `<b style="color:var(--gold)">牌型排名（由弱到强）</b>
+      <table class="rankTable">${table}</table>
+      <div class="noteBox"><b>流程：</b>每次劫案 4 轮。第1轮发 2 张底牌 + 拿白筹码；第2轮翻 3 张公共牌 + 黄筹码；第3轮再翻 1 张 + 橙筹码；第4轮再翻 1 张 + 红筹码。每轮所有玩家各持 1 枚当前颜色筹码后进入下一轮。<br>
+      <b>筹码信号：</b>星数 = 自认牌型在全场中的排名预期（最大星 = 最强，1 星 = 最弱）。可拿中央或别人面前的筹码，也可把自己当前的放回中央；每种颜色面前至多 1 枚。<br>
+      <b>摊牌：</b>按红色筹码 1 星 → 最大星依次亮牌，牌型必须"不弱于"上一位（完全打平可以）。全对 → 金库翻金；有错 → 警报翻红，劫案失败。<br>
+      <b>禁止</b>用语言/手势透露手牌，筹码是唯一合法的交流方式！</div>`,
+    actions: [{ label: '关闭' }]
+  });
+}
+const RULE_DESC = ['五张不组成任何牌型，比最大单张', '两张同数值', '两对，先比大对再比小对', '三张同数值', '五张连续数值（A 可作 1 或最大，不能在中间）', '五张同花色', '三条 + 一对', '四张同数值', '同花 + 顺子', '同花 10-J-Q-K-A'];
+
+/* ---------------- 劫案流程 ---------------- */
+function drawFromCardDeck(deckIds) { // 挑战/专家牌堆：空了则洗混 1-10
+  if (deckIds.length === 0) { deckIds.push(...shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])); log('牌堆已用完一轮，洗混后重新排序。'); }
+  return deckIds.shift();
+}
+
+async function startHeist() {
+  S.heist++;
+  S.deck = freshDeck(); S.discard = [];
+  S.community = []; S.round = 0; S.phase = 'idle';
+  S.activeChallenge = null; S.activeExpert = null;
+  S.players.forEach(p => { p.chips = { white: null, yellow: null, orange: null, red: null }; p.striker = false; p.msg = ''; });
+  render();
+
+  // 进阶模式：第 2 次劫案起，根据上次结果启用挑战牌或专家牌
+  if (S.mode === 'advanced' && S.heist >= 2 && S.lastHeistResult !== null) {
+    if (S.lastHeistResult) {
+      S.activeChallenge = drawFromCardDeck(S.chalDeck);
+      log(`启用挑战牌：${CHALLENGES[S.activeChallenge].name}`, true);
+    } else {
+      S.activeExpert = drawFromCardDeck(S.expDeck);
+      log(`启用专家牌：${EXPERTS[S.activeExpert].name}`, true);
+    }
+  }
+
+  // 劫案开场
+  let introBody = `<div>第 <b style="color:var(--gold)">${S.heist}</b> 次劫案开始！洗混扑克牌，将剩余牌正面朝下放于桌面中央。</div>`;
+  if (S.activeChallenge) introBody += `<div class="noteBox">🃏 本劫案生效挑战牌：<b>${CHALLENGES[S.activeChallenge].name}</b><br>${CHALLENGES[S.activeChallenge].text}</div>`;
+  if (S.activeExpert) introBody += `<div class="noteBox">👔 本劫案生效专家牌：<b>${EXPERTS[S.activeExpert].name}</b><br>${EXPERTS[S.activeExpert].text}</div>`;
+  await modal({ title: `💰 第 ${S.heist} 次劫案`, body: introBody, actions: [{ label: '开始' }] });
+
+  // 发底牌
+  const holeN = S.activeChallenge === 10 ? 3 : 2;   // 监控摄像头：3 张底牌
+  S.players.forEach(p => { p.hole = []; for (let k = 0; k < holeN; k++) p.hole.push(S.deck.pop()); });
+
+  // 骗子（专家9）：洗混重发
+  if (S.activeExpert === 9) {
+    const all = [];
+    S.players.forEach(p => all.push(...p.hole));
+    shuffle(all);
+    S.players.forEach(p => { p.hole = all.splice(0, holeN); });
+    log('专家牌【骗子】：所有底牌已洗混并重新分发。', true);
+  }
+
+  await modal({
+    title: '底牌已发放',
+    body: `每位玩家已获得 ${holeN} 张正面朝下的底牌（点击座位上的 <b>👁 查看底牌</b> 按钮可以偷看，注意让其他玩家回避）。${S.activeExpert === 9 ? '<br><br>👔 专家牌【骗子】已生效：底牌被收拢洗混后重新分发——你这次拿到的可能不是自己的牌！' : ''}`,
+    actions: [{ label: '知道了' }]
+  });
+
+  // 专家牌开局流程
+  if (S.activeExpert) await runExpertPrePhase();
+
+  if (S.activeChallenge === 1) {
+    log('挑战牌【快速入口】：跳过白色筹码轮，直接进入第2轮。', true);
+    await modal({ title: '🃏 快速入口', body: '白色筹码放在一边，第1轮只分发底牌，现在直接进入第 2 轮！', actions: [{ label: '进入第2轮' }] });
+    startRound(2);
+  } else {
+    startRound(1);
+  }
+}
+
+/* ---------------- 专家牌开局引导 ---------------- */
+async function pickPlayer(title, except) {
+  const opts = S.players.map((p, i) => ({ label: p.name, value: i })).filter(o => o.value !== except);
+  const v = await modal({ title, body: '请全体商讨后选择（口头商议，由一人代点）：', actions: opts });
+  return v;
+}
+async function privateStep(i, title, bodyFn) {
+  // 私密步骤：回避提示 → 自定义内容/操作 → 结束
+  await modal({
+    title: `⚠ 请其他玩家回避 — ${S.players[i].name}`, titleCls: 'priv',
+    body: '<div class="privWarn">其他玩家请移开视线！</div>',
+    actions: [{ label: `我是 ${S.players[i].name}，继续`, value: 1 }]
+  });
+  await bodyFn();
+  render();
+}
+
+async function runExpertPrePhase() {
+  const e = S.activeExpert;
+  if (e === 1) { // 线人
+    const shower = await pickPlayer('线人：选择展示底牌的玩家');
+    const viewer = await pickPlayer(`线人：${S.players[shower].name} 把底牌展示给谁？`, shower);
+    await modal({ title: '👔 线人', body: `${S.players[shower].name} 将向 <b>${S.players[viewer].name}</b> 秘密展示一张底牌。<b>${S.players[viewer].name} 不可公布</b>获得的底牌信息。`, actions: [{ label: '开始秘密展示', value: 1 }] });
+    await privateStep(shower, '', async () => {
+      const cardIdx = await pickHoleCard(shower, '选择要秘密展示的一张底牌：');
+      const pm = modal({
+        title: `🤫 只有 ${S.players[viewer].name} 可以看`, titleCls: 'priv',
+        body: `<div class="privWarn">只有 ${S.players[viewer].name} 可以看这一屏！</div>
+          <div class="cardsRow" id="pk"></div>`,
+        actions: [{ label: '记住并隐藏' }]
+      });
+      const row = $('#pk');
+      row.appendChild(cardEl(S.players[shower].hole[cardIdx]));
+      await pm;
+    });
+    log(`专家牌【线人】：${S.players[shower].name} 向 ${S.players[viewer].name} 秘密展示了一张底牌。`, true);
+  }
+  else if (e === 2) { // 接应司机
+    const who = await pickPlayer('接应司机：选择公布牌型的玩家');
+    const p = S.players[who];
+    const name = p.hole.length >= 2 && p.hole[0].r === p.hole[1].r ? '一对' : '高牌';
+    await modal({ title: '👔 接应司机', body: `<b>${p.name}</b> 公布自己当前的牌型：<br><br><span class="handName" style="font-size:20px">${name}</span><br><br>（不能透露牌型以外的其他信息）`, actions: [{ label: '确定' }] });
+    log(`专家牌【接应司机】：${p.name} 公布牌型为「${name}」。`, true);
+  }
+  else if (e === 3) { // 金主
+    let html = '<div>每位玩家公布自己底牌中人头牌（J、Q、K）的张数：</div>';
+    S.players.forEach(p => {
+      const cnt = p.hole.filter(c => c.r >= 11 && c.r <= 13).length;
+      html += `<div class="sumLine"><span>${p.name}</span><b style="color:var(--gold)">${cnt} 张人头牌</b></div>`;
+    });
+    await modal({ title: '👔 金主', body: html, actions: [{ label: '确定' }] });
+    log('专家牌【金主】：全员公布了人头牌张数。', true);
+  }
+  else if (e === 4) { // 主谋
+    const who = await pickPlayer('主谋：选择公布信息的玩家');
+    const valTxt = await modal({
+      title: '主谋：公布哪个数值？',
+      body: `选择 <b>${S.players[who].name}</b> 要公布数量的牌面数值：`,
+      actions: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(r => ({ label: RANK_TXT[r], value: r }))
+    });
+    const cnt = S.players[who].hole.filter(c => c.r === valTxt).length;
+    await modal({ title: '👔 主谋', body: `<b>${S.players[who].name}</b> 公布："我有 <span class="handName">${cnt} 张 ${RANK_TXT[valTxt]}</span>。"`, actions: [{ label: '确定' }] });
+    log(`专家牌【主谋】：${S.players[who].name} 公布有 ${cnt} 张 ${RANK_TXT[valTxt]}。`, true);
+  }
+  else if (e === 5) { // 黑客
+    const who = await pickPlayer('黑客：选择执行入侵的玩家');
+    const card = S.deck.pop();
+    S.players[who].hole.push(card);
+    log(`专家牌【黑客】：${S.players[who].name} 从牌堆抽了 1 张牌加入底牌。`, true);
+    await privateStep(who, '', async () => {
+      const discardIdx = await pickHoleCard(who, `你抽到了：<b>${cardText(card)}</b><br>现在选择一张底牌正面朝下放入弃牌堆（可以选刚抽到的这张）：`, true);
+      const removed = S.players[who].hole.splice(discardIdx, 1)[0];
+      S.discard.push(removed);
+      await modal({ title: '黑客完成', body: `你已将 <b>${cardText(removed)}</b> 放入弃牌堆。`, actions: [{ label: '确定' }] });
+    });
+  }
+  else if (e === 6) { // 中间人
+    await modal({ title: '👔 中间人', body: '每位玩家将秘密选择自己的一张底牌，传递给左边的玩家。请按座位顺序依次操作。', actions: [{ label: '开始', value: 1 }] });
+    const picks = [];
+    for (let i = 0; i < S.n; i++) {
+      await privateStep(i, '', async () => {
+        const idx = await pickHoleCard(i, '选择你要传给左边玩家的一张底牌：');
+        picks[i] = idx;
+      });
+    }
+    const kept = S.players.map(p => p.hole.slice());
+    for (let i = 0; i < S.n; i++) {
+      const to = (i + 1) % S.n;
+      const card = kept[i][picks[i]];
+      const newHole = kept[i].filter((_, k) => k !== picks[i]);
+      newHole.push(card); // 顺序无关，牌进入右手玩家手牌
+      S.players[to].hole = newHole;
+    }
+    await modal({ title: '👔 中间人', body: '所有底牌已同时传递给左边的玩家！请各位重新查看自己的新底牌。', actions: [{ label: '确定' }] });
+    log('专家牌【中间人】：每人都把一张底牌传给了左边的玩家。', true);
+  }
+  else if (e === 7) { // 骑士
+    const who = await pickPlayer('骑士：选择获得"骑士J"的玩家');
+    const knight = { r: 11, s: 4 };
+    S.players[who].hole.push(knight);
+    log(`专家牌【骑士】：${S.players[who].name} 获得了无花色的骑士J，并须弃掉一张其他底牌。`, true);
+    await privateStep(who, '', async () => {
+      const idx = await pickHoleCard(who, '你获得了 <b>骑士J（无花色，不能组同花）</b>。现在选择一张"骑士"以外的底牌正面朝下放入弃牌堆：', knight);
+      const removed = S.players[who].hole.splice(idx, 1)[0];
+      S.discard.push(removed);
+      const pm = modal({ title: '骑士完成', body: `你已将 <b>${cardText(removed)}</b> 放入弃牌堆，你现在的底牌为：`, actions: [{ label: '确定' }] });
+      const row = document.querySelector('#modalBox .body');
+      const cr = el('div', 'cardsRow');
+      S.players[who].hole.forEach(c => cr.appendChild(cardEl(c)));
+      row.appendChild(cr);
+      await pm;
+    });
+  }
+  else if (e === 8) { // 数学天才
+    let html = '<div>每位玩家公布自己底牌数值之和（J/Q/K=10，A=11）：</div>';
+    S.players.forEach(p => {
+      const sum = p.hole.reduce((t, c) => t + (c.r === 14 ? 11 : Math.min(c.r, 10)), 0);
+      html += `<div class="sumLine"><span>${p.name}</span><b style="color:var(--gold)">底牌之和 = ${sum}</b></div>`;
+    });
+    await modal({ title: '👔 数学天才', body: html, actions: [{ label: '确定' }] });
+    log('专家牌【数学天才】：全员公布了底牌数值之和。', true);
+  }
+  // e === 9 骗子已在发牌时处理；e === 10 打手在摊牌时处理
+  else if (e === 10) {
+    const who = await pickPlayer('打手：选择获得"打手"标记的玩家');
+    S.players[who].striker = true;
+    await modal({ title: '👊 打手', body: `<b>${S.players[who].name}</b> 获得打手标记：摊牌时，他的"一对"将击败所有同类别（一对）的其他牌型。`, actions: [{ label: '确定' }] });
+    log(`专家牌【打手】：${S.players[who].name} 获得打手标记。`, true);
+  }
+  render();
+}
+
+/* 私密选择一张底牌：返回索引 */
+async function pickHoleCard(i, prompt, excludeCard) {
+  const p = S.players[i];
+  // 用自定义模态（需要卡片按钮）
+  return new Promise(resolve => {
+    const root = $('#modalRoot'), box = $('#modalBox');
+    box.innerHTML = `<h2 class="priv">🤫 ${p.name} 的私密操作</h2>
+      <div class="privWarn">其他玩家请移开视线！</div>
+      <div class="body"><div>${prompt || ''}</div><div class="cardsRow" id="holePick"></div></div>`;
+    const row = box.querySelector('#holePick');
+    p.hole.forEach((c, k) => {
+      if (excludeCard && c === excludeCard) return;
+      const ce = cardEl(c); ce.style.cursor = 'pointer';
+      ce.onclick = () => { root.classList.remove('show'); resolve(k); };
+      row.appendChild(ce);
+    });
+    root.classList.add('show');
+  });
+}
+
+/* ---------------- 轮次流程 ---------------- */
+async function startRound(n) {
+  S.round = n;
+  const prevColor = ROUND_COLOR[n - 1];
+  // 断电（挑战8）：弃置上一轮筹码
+  if (S.activeChallenge === 8 && n >= 2) {
+    S.players.forEach(p => p.chips[prevColor] = null);
+    log(`挑战牌【断电】：第 ${n} 轮开始，所有${COLOR_TXT[prevColor]}筹码被弃置！（须凭记忆）`, true);
+  }
+  // 翻公共牌
+  const flips = n === 2 ? 3 : (n === 3 || n === 4) ? 1 : 0;
+  for (let k = 0; k < flips; k++) S.community.push(S.deck.pop());
+  render();
+
+  if (flips > 0) {
+    const cardsTxt = S.community.slice(-flips).map(cardText).join('、');
+    await modal({
+      title: `${ROUND_NAME[n]} — 翻开公共牌`,
+      body: flips === 3 ? `任意一位玩家从牌堆抽 3 张正面朝上放于桌面中央：<br><b style="color:var(--gold)">${cardsTxt}</b>`
+        : `翻开 1 张公共牌：<br><b style="color:var(--gold)">${cardsTxt}</b>`,
+      actions: [{ label: '继续' }]
+    });
+    log(`第${n}轮翻公共牌：${cardsTxt}`, true);
+  }
+
+  // 挑战牌触发检查（第2轮翻牌后）
+  if (n === 2 && (S.activeChallenge === 3 || S.activeChallenge === 7)) {
+    const hasFace = S.community.slice(0, 3).some(c => c.r >= 11 && c.r <= 13);
+    if (S.activeChallenge === 3 && hasFace) {
+      const i = findChipHolder('white', 1);
+      if (i >= 0) await forceRedraw(i, '运动侦测器', '第2轮公共牌中出现了 J/Q/K！');
+    } else if (S.activeChallenge === 7 && !hasFace) {
+      const maxStar = S.players.reduce((m, p) => Math.max(m, p.chips.white ? p.chips.white.star : 0), 0);
+      const i = findChipHolder('white', maxStar);
+      if (i >= 0) await forceRedraw(i, '激光绊线', '第2轮公共牌中没有任何 J/Q/K！');
+    }
+  }
+
+  // 陶瓷敲离（挑战5）：第3轮不分配橙色筹码
+  if (n === 3 && S.activeChallenge === 5) {
+    log('挑战牌【陶瓷敲离】：第3轮不分配橙色筹码，直接进入第4轮。', true);
+    await modal({ title: '🃏 陶瓷敲离', body: '第3轮不分配橙色筹码！已翻开第4张公共牌，直接进入第4轮。', actions: [{ label: '进入第4轮' }] });
+    startRound(4);
+    return;
+  }
+
+  // 开始筹码分配
+  const color = ROUND_COLOR[n];
+  S.centerChips = new Set();
+  for (let s = 1; s <= S.n; s++) S.centerChips.add(s);
+  S.phase = 'chips';
+  S.confirmed = S.players.map(() => false);   // 每轮重置确认状态
+  S.confirmHinted = false;
+  render();
+  log(`第${n}轮：展开所有${COLOR_TXT[color]}筹码，自由拿取。所有人拿定后需各自确认才进入下一轮。`, true);
+}
+
+function findChipHolder(color, star) {
+  return S.players.findIndex(p => p.chips[color] && p.chips[color].star === star);
+}
+async function forceRedraw(i, challName, reason) {
+  const p = S.players[i];
+  await modal({
+    title: `🚨 挑战牌【${challName}】触发！`,
+    body: `<b>${p.name}</b>（持${challName === '运动侦测器' ? '白色1星' : '最多星数白色'}筹码）触发条件：${reason}<br>
+      他的底牌必须正面朝下放入弃牌堆，并从牌堆抽取 2 张新底牌。`,
+    actions: [{ label: '执行换牌', value: 1 }]
+  });
+  S.discard.push(...p.hole);
+  p.hole = [S.deck.pop(), S.deck.pop()];
+  log(`【${challName}】${p.name} 的底牌被替换为新的 2 张。`, true);
+  await privateStep(i, '', async () => {
+    await new Promise(resolve => {
+      const root = $('#modalRoot'), box = $('#modalBox');
+      box.innerHTML = `<h2 class="priv">🤫 ${p.name} 的新底牌</h2>
+        <div class="privWarn">其他玩家请移开视线！</div>
+        <div class="body"><div class="cardsRow" id="nh"></div></div>
+        <div class="acts"><button class="btn" id="nhOk">记住了</button></div>`;
+      const row = box.querySelector('#nh');
+      p.hole.forEach(c => row.appendChild(cardEl(c)));
+      box.querySelector('#nhOk').onclick = () => { root.classList.remove('show'); resolve(); };
+      root.classList.add('show');
+    });
+  });
+}
+
+/* ---------------- 筹码操作 ---------------- */
+function isDarkChip(round, star) {
+  if (S.activeChallenge === 2) return round <= 3 && star === 1;         // 噪声传感器
+  if (S.activeChallenge === 6) return round <= 3 && star === S.n;       // 通风管道
+  return false;
+}
+function takeCenter(star) {
+  if (S.phase !== 'chips' || !S.centerChips.has(star)) return;
+  // 找到操作者：当前没有该色筹码的第一位玩家？——实际上由座位点击自己；这里简化：弹出选择
+  const candidates = S.players.map((p, i) => ({ p, i })).filter(x => !x.p.chips[ROUND_COLOR[S.round]]);
+  if (candidates.length === 0) return;
+  if (candidates.length === 1) { doTakeCenter(candidates[0].i, star); return; }
+  // 多人可拿：让玩家选择谁拿（口头协调）
+  const opts = [...candidates.map(x => ({ label: x.p.name + ' 拿', value: x.i })), { label: '取消', value: null, cls: 'ghost' }];
+  modal({ title: `谁拿取 ${star} 星筹码？`, body: '请拿取的玩家确认：', actions: opts }).then(i => { if (i != null) doTakeCenter(i, star); });
+}
+function doTakeCenter(i, star) {
+  const color = ROUND_COLOR[S.round];
+  S.centerChips.delete(star);
+  S.players[i].chips[color] = { star, dark: isDarkChip(S.round, star) };
+  log(`${S.players[i].name} 拿走了中央的 ${star} 星${COLOR_TXT[color]}筹码${S.players[i].chips[color].dark ? '（深色面！不可放回、不可被拿）' : ''}。`);
+  setMsg(i, '');
+  S.confirmed[i] = false;   // 筹码变动 → 需重新确认
+  render();
+  afterMove();
+}
+function takeFromPlayer(targetIdx) {
+  if (S.phase !== 'chips') return;
+  const color = ROUND_COLOR[S.round];
+  const target = S.players[targetIdx];
+  if (!target.chips[color] || target.chips[color].dark) return;
+  const takers = S.players.map((p, i) => ({ p, i })).filter(x => !x.p.chips[color] && x.i !== targetIdx);
+  if (takers.length === 0) return;
+  if (takers.length === 1) { doTakeFrom(takers[0].i, targetIdx); return; }
+  const opts = [...takers.map(x => ({ label: x.p.name + ' 拿走', value: x.i })), { label: '取消', value: null, cls: 'ghost' }];
+  modal({ title: `谁拿走 ${target.name} 面前的筹码？`, body: '请拿取的玩家确认：', actions: opts })
+    .then(i => { if (i != null) doTakeFrom(i, targetIdx); });
+}
+function doTakeFrom(i, targetIdx) {
+  const color = ROUND_COLOR[S.round];
+  S.players[i].chips[color] = S.players[targetIdx].chips[color];
+  S.players[targetIdx].chips[color] = null;
+  log(`${S.players[i].name} 从 ${S.players[targetIdx].name} 面前拿走了 ${S.players[i].chips[color].star} 星${COLOR_TXT[color]}筹码！`);
+  S.confirmed[i] = false; S.confirmed[targetIdx] = false;   // 双方筹码变动 → 重新确认
+  render();
+  afterMove();
+}
+function returnChip(i) {
+  const color = ROUND_COLOR[S.round];
+  const chip = S.players[i].chips[color];
+  if (!chip || chip.dark) return;
+  S.centerChips.add(chip.star);
+  S.players[i].chips[color] = null;
+  log(`${S.players[i].name} 把面前的 ${chip.star} 星${COLOR_TXT[color]}筹码放回了桌面中央。`);
+  S.confirmed[i] = false;
+  render();
+}
+function confirmPlayer(i) {
+  const color = ROUND_COLOR[S.round];
+  if (S.phase !== 'chips' || !S.players[i].chips[color]) return;
+  S.confirmed[i] = !S.confirmed[i];
+  log(`${S.players[i].name} ${S.confirmed[i] ? '确认了' : '取消确认'}自己的 ${S.players[i].chips[color].star} 星${COLOR_TXT[color]}筹码。`);
+  render();
+  afterMove();
+}
+/* 每次筹码变动后检查：全部持筹且全部确认才进入下一轮 */
+function afterMove() {
+  const color = ROUND_COLOR[S.round];
+  if (S.phase !== 'chips') return;
+  const allHave = S.players.every(p => p.chips[color]);
+  const allConfirmed = S.confirmed.every(Boolean);
+  if (allHave && allConfirmed) { roundEnd(); return; }
+  if (allHave && !allConfirmed && !S.confirmHinted) {
+    S.confirmHinted = true;
+    log('所有玩家都已持有筹码：请各自点击"确认"锁定。确认前仍可自由更换筹码（变动后需重新确认）。', true);
+  }
+}
+function roundEnd() {
+  S.phase = 'idle'; render();
+  log(`第${S.round}轮结束：所有玩家确认了各自的${COLOR_TXT[ROUND_COLOR[S.round]]}筹码。`, true);
+  if (S.round < 4) {
+    modal({ title: `第${S.round}轮结束`, body: `所有玩家都确认了${COLOR_TXT[ROUND_COLOR[S.round]]}筹码。<br>之前轮次的筹码请整齐排在自己面前——注意观察每个人每一轮的预期变化！`, actions: [{ label: '进入下一轮' }] })
+      .then(() => startRound(S.round + 1));
+  } else {
+    modal({ title: '第4轮结束', body: '所有玩家都确认了红色筹码。<br><b style="color:var(--gold)">第4轮之后，进行摊牌！</b>', actions: [{ label: '开始摊牌' }] })
+      .then(showdown);
+  }
+}
+
+/* ---------------- 摊牌 ---------------- */
+function cmpReveal(prev, cur) {
+  const c1 = prev.score[0], c2 = cur.score[0];
+  if (c1 === c2) {
+    if (cur.striker && !prev.striker) return 1;    // 打手击败同类别
+    if (prev.striker && !cur.striker) return -1;
+  }
+  return lex(cur.score, prev.score);
+}
+async function showdown() {
+  S.phase = 'showdown';
+  const color = 'red';
+  const order = S.players.map((p, i) => ({ p, i })).sort((a, b) => a.p.chips.red.star - b.p.chips.red.star);
+  log(`摊牌顺序（红筹码升序）：${order.map(o => `${o.p.name}(${o.p.chips.red.star}星)`).join(' → ')}`, true);
+  await modal({
+    title: '🃏 摊牌 — 公布真相',
+    body: `按红色筹码星数<b>从小到大</b>依次展示：<br>${order.map(o => `${o.p.chips.red.star}星 → ${o.p.name}`).join('<br>')}<br><br>
+      每位玩家展示底牌并公布自己能凑成的<b>最强五张</b>牌型。每张翻开的牌不得弱于上一位（完全打平可以）！`,
+    actions: [{ label: '开始摊牌' }]
+  });
+
+  const maxRedStar = order[order.length - 1].p.chips.red.star;
+  let prev = null;
+  for (const o of order) {
+    const p = o.p, i = o.i;
+    const isMaxRed = p.chips.red.star === maxRedStar;
+
+    // 挑战牌：视网膜扫描 / 指纹扫描
+    if (isMaxRed && S.activeChallenge === 4) {
+      const guess = await modal({
+        title: '🚨 视网膜扫描',
+        body: `在 <b>${p.name}</b> 展示手牌之前，其余玩家共同商讨并猜测他的一张底牌数值（他不能参与、不能提示）：`,
+        actions: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(r => ({ label: RANK_TXT[r], value: r }))
+      });
+      const hit = p.hole.some(c => c.r === guess);
+      if (!hit) {
+        log(`视网膜扫描失败：其余玩家猜 ${RANK_TXT[guess]}，${p.name} 的底牌中没有！`, true);
+        return heistEnd(false, `视网膜扫描失败——其余玩家猜测的数值（${RANK_TXT[guess]}）不在 ${p.name} 的底牌中。无论筹码排序是否正确，本次劫案视为失败！`);
+      }
+      log(`视网膜扫描通过：${p.name} 的底牌中确有 ${RANK_TXT[guess]}。`, true);
+      await modal({ title: '✅ 视网膜扫描通过', body: `${p.name} 的底牌中确实有一张 <b>${RANK_TXT[guess]}</b>！继续摊牌。`, actions: [{ label: '继续' }] });
+    }
+    if (isMaxRed && S.activeChallenge === 9) {
+      const guess = await modal({
+        title: '🚨 指纹扫描',
+        body: `在 <b>${p.name}</b> 展示手牌之前，其余玩家共同商讨并猜测他的<b>牌型</b>（他不能参与、不能提示）：`,
+        actions: HAND_NAMES.map((h, k) => ({ label: h, value: k }))
+      });
+      const b = best5([...p.hole, ...S.community], p.striker);
+      const real = b.score[0];
+      if (guess !== real) {
+        log(`指纹扫描失败：其余玩家猜「${HAND_NAMES[guess]}」，实际是「${HAND_NAMES[real]}」。`, true);
+        return heistEnd(false, `指纹扫描失败——其余玩家猜测的牌型是「${HAND_NAMES[guess]}」，但实际是「<b>${HAND_NAMES[real]}</b>」。本次劫案视为失败！`);
+      }
+      log(`指纹扫描通过：牌型确实是「${HAND_NAMES[real]}」。`, true);
+      await modal({ title: '✅ 指纹扫描通过', body: `猜测正确！${p.name} 的牌型确实是 <b>${HAND_NAMES[real]}</b>。继续摊牌。`, actions: [{ label: '继续' }] });
+    }
+
+    // 展示
+    await modal({
+      title: `轮到 ${p.name} 摊牌`,
+      body: `<div class="privWarn">请 ${p.name} 准备亮牌，其他玩家围观！</div>`,
+      actions: [{ label: '亮牌！', value: 1 }]
+    });
+    const all = [...p.hole, ...S.community];
+    const b = best5(all, p.striker);
+    let cmpHtml = '';
+    if (prev) {
+      const c = cmpReveal(prev, b);
+      if (c >= 0) cmpHtml = `<div style="margin-top:8px"><span class="cmpTag ok">✔ 不弱于上一位（${handName(prev.score)}）</span></div>`;
+      else {
+        cmpHtml = `<div style="margin-top:8px"><span class="cmpTag bad">✘ 弱于上一位（${handName(prev.score)}）！</span></div>`;
+        // 展示失败画面
+        const allCardsHtml = cardsRowHtml(p.hole, S.community, b.cards);
+        await modal({
+          title: '💥 摊牌错误！',
+          body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！
+            <div class="cardsRow">${allCardsHtml}</div>
+            <div>一张警报牌翻至红色面，本次劫案失败。</div>`,
+          actions: [{ label: '唉…接受失败', cls: 'warn' }]
+        });
+        log(`${p.name} 的牌型 ${handName(b.score)} 弱于上一位的 ${handName(prev.score)}，劫案失败！`, true);
+        return heistEnd(false, `<b>${p.name}</b> 展示的牌型「${handName(b.score)}」弱于上一位的「${handName(prev.score)}」。你们没有正确安排分工，一张警报牌翻至红色面！`);
+      }
+    }
+    const firstTag = !prev ? '<div style="margin-top:8px"><span class="cmpTag ok">✔ 第一位展示，无比较对象</span></div>' : '';
+    await modal({
+      title: `${p.name} 的牌型`,
+      body: `<div class="cardsRow">${cardsRowHtml(p.hole, S.community, b.cards)}</div>
+        <div style="font-size:16px;margin-top:4px">最强五张牌型：<span class="handName" style="font-size:18px">${handName(b.score)}</span>
+        ${p.striker ? ' <span class="badge" style="color:#ffb3ae">👊 打手</span>' : ''}</div>
+        <div style="font-size:12.5px;color:#9fc7b2;margin-top:2px">（金色描边的 5 张为参与比较的牌型组成）</div>
+        ${cmpHtml}${firstTag}`,
+      actions: [{ label: prev ? '下一位' : '下一位' }]
+    });
+    log(`${p.name} 展示：${handName(b.score)}${prev ? `（对比 ${handName(prev.score)}：${cmpReveal(prev, b) >= 0 ? '通过' : '失败'}）` : ''}`);
+    prev = { ...b, name: p.name };
+  }
+  heistEnd(true);
+}
+function cardsRowHtml(hole, community, bestCards) {
+  const isBest = c => bestCards.some(b => b === c);
+  let h = '<div style="width:100%;color:#9fc7b2;font-size:12px">底牌：</div>';
+  hole.forEach(c => h += cardOuter(cardEl(c), isBest(c)));
+  h += '<div style="width:100%;color:#9fc7b2;font-size:12px;margin-top:4px">公共牌：</div>';
+  community.forEach(c => h += cardOuter(cardEl(c), isBest(c)));
+  return h;
+}
+function cardOuter(cardNode, hl) {
+  const w = el('div'); w.style.display = 'inline-block'; w.style.margin = '2px';
+  if (hl) cardNode.classList.add('hl');
+  w.appendChild(cardNode);
+  return w.outerHTML;
+}
+
+/* ---------------- 劫案结算 ---------------- */
+async function heistEnd(success, failReason) {
+  S.phase = 'idle';
+  S.lastHeistResult = success;
+  if (success) {
+    S.vaults++;
+    log(`第 ${S.heist} 次劫案成功！金库牌翻至金色面（${S.vaults}/3）。`, true);
+  } else {
+    S.alarms++;
+    log(`第 ${S.heist} 次劫案失败！警报牌翻至红色面（${S.alarms}/3）。`, true);
+  }
+  render();
+  // 挑战/专家牌放回牌堆底部
+  if (S.activeChallenge) { S.chalDeck.push(S.activeChallenge); S.activeChallenge = null; }
+  if (S.activeExpert) { S.expDeck.push(S.activeExpert); S.activeExpert = null; }
+
+  // 终局判定
+  if (S.vaults >= 3 || S.alarms >= 3) {
+    const win = S.vaults >= 3;
+    await modal({
+      title: win ? '🏆 游戏胜利！' : '🚨 游戏失败…',
+      body: win
+        ? `你们成功将 <b>3 张金库牌</b>翻至金色面！经过 ${S.heist} 次劫案，纸牌帮满载而归。<br><br>残暴全伙，但是轻松学会——你们做到了完美的无言配合！`
+        : `你们被迫将 <b>3 张警报牌</b>翻至红色面。警察包围了现场，这次帮派行动彻底失败…<br><br>再来一局，这次的教训是：时刻关注每一轮筹码的流转！`,
+      actions: [{ label: '重新开始', cls: 'warn' }]
+    });
+    location.reload();
+    return;
+  }
+
+  await modal({
+    title: success ? '✅ 劫案成功！' : '❌ 劫案失败',
+    body: `${failReason || ''}
+      <div class="noteBox">
+        ${success ? '你们每次翻开的牌都不弱于上一次——完美配合！将一张<b>金库牌</b>翻至金色面。' : '一张<b>警报牌</b>翻至红色面。摊牌后当次劫案结束。'}
+        <br>当前进度：金库 <b>${S.vaults}/3</b> · 警报 <b>${S.alarms}/3</b>
+        ${S.mode === 'advanced' ? `<br>${success ? '下一次劫案将启用一张新的<b>挑战牌</b>提升难度。' : '下一次劫案将启用一张<b>专家牌</b>降低难度。'}` : ''}
+      </div>
+      从第 1 轮开始下一次劫案。`,
+    actions: [{ label: success ? '下次劫案（更具挑战）' : '重整旗鼓，下次劫案' }]
+  });
+  startHeist();
+}
+
+/* ---------------- 初始化 ---------------- */
+</script>
+</body>
+</html>

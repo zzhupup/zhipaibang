@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/room/room",
+    "pages/table/table"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#144832",
+    "navigationBarTitleText": "无声劫案",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0f2f22",
+    "backgroundTextStyle": "dark"
+  },
+  "cloud": true,
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

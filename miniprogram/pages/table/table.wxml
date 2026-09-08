@@ -1,0 +1,166 @@
+<view class="page">
+  <!-- 顶栏 -->
+  <view class="hdr">
+    <view class="hdrRow">
+      <view class="tally">
+        <text class="tallyLbl">金库</text>
+        <view wx:for="{{vaultCards}}" wx:key="index" class="miniCard {{item?'gold':''}}"></view>
+        <text class="tallyLbl alarmLbl">警报</text>
+        <view wx:for="{{alarmCards}}" wx:key="index" class="miniCard {{item?'red':''}}"></view>
+      </view>
+      <view class="hdrBtns">
+        <button class="hbtn" catchtap="onInfo">🎯</button>
+        <button class="hbtn" catchtap="onLog">📜</button>
+        <button class="hbtn" catchtap="onRules">📖</button>
+        <button class="hbtn" catchtap="onRestart">✖</button>
+      </view>
+    </view>
+    <view class="hdrRow2">
+      <view class="pill" catchtap="onInfo">第{{heist}}次劫案 · {{pillText}}</view>
+      <view wx:if="{{challengeName}}" class="pill challenge" catchtap="onInfo">🃏{{challengeName}}</view>
+      <view wx:if="{{expertName}}" class="pill expert" catchtap="onInfo">👔{{expertName}}</view>
+    </view>
+  </view>
+
+  <!-- 圆桌舞台 -->
+  <view class="stageWrap" style="width:{{stageW}}px;height:{{stageH}}px">
+    <view class="stage" style="width:{{stageW}}px;height:{{stageH}}px;transform:scale({{scale}})">
+      <!-- 毛毡桌 -->
+      <view class="roundTable">
+        <view class="feltMark">无 声 劫 案</view>
+      </view>
+
+      <!-- 中央区 -->
+      <view class="centerArea">
+        <view class="communityRow">
+          <view wx:for="{{community}}" wx:key="index" class="pcard small {{item.red?'red':''}} {{item.knight?'knight':''}}">
+            <view class="corner"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
+            <view class="pip">{{item.suit}}</view>
+            <view class="corner br"><text>{{item.label}}</text><text>{{item.suit}}</text></view>
+          </view>
+          <view wx:for="{{[0,1,2,3,4]}}" wx:key="*this" wx:if="{{community.length <= index}}" class="slot"><text>公共牌</text></view>
+        </view>
+        <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
+        <view class="centerChips">
+          <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.star && roundColor}}" hover-class="chipHover"
+            catchtap="onCenterChip" data-star="{{item.star}}">
+            <text class="stars">{{item.stars}}</text>
+          </view>
+          <text wx:if="{{phase==='chips' && !centerChips.length}}" class="noChip">中央已没有筹码</text>
+          <text wx:if="{{phase==='showdown'}}" class="noChip">摊牌进行中…</text>
+        </view>
+      </view>
+
+      <!-- 座位 -->
+      <view class="seat" wx:for="{{seats}}" wx:key="i"
+        style="left:{{item.x}}px;top:{{item.y}}px">
+        <view class="seatHead">
+          <text class="pname">{{item.name}}</text>
+          <text wx:if="{{item.striker}}" class="badge">👊</text>
+          <button wx:if="{{item.canPeek}}" class="eye" catchtap="onPeek" data-i="{{item.i}}">👁</button>
+        </view>
+        <view class="holeRow">
+          <view wx:for="{{[0,1,2]}}" wx:for-item="h" wx:key="*this" wx:if="{{item.holeCount > index}}" class="pcard tiny back"></view>
+        </view>
+        <view class="chipLine">
+          <block wx:for="{{item.chips}}" wx:for-item="ch" wx:key="id">
+            <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
+              catchtap="onSeatChip" data-i="{{item.i}}">
+              <text class="stars">{{ch.stars}}</text>
+            </view>
+            <button wx:if="{{ch.current}}" class="returnBtn" catchtap="onReturn" data-i="{{item.i}}">↩</button>
+          </block>
+          <text wx:if="{{!item.chips.length}}" class="rl">暂无筹码</text>
+        </view>
+        <button wx:if="{{phase==='chips'}}" class="confirmBtn {{item.confirmed?'on':''}} {{item.canConfirm?'':'dis'}}"
+          catchtap="onConfirm" data-i="{{item.i}}">{{item.confirmLabel}}</button>
+        <text wx:if="{{item.msg}}" class="msg">{{item.msg}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 模态弹窗（单机/房主引擎弹窗 · 客人查看底牌） -->
+<view class="mroot {{modal?'show':''}}">
+  <view class="mbox" wx:if="{{modal}}" catchtap="noop">
+    <view class="mtitle {{modal.titleCls}}">{{modal.title}}</view>
+    <scroll-view scroll-y class="mbodyS">
+      <rich-text nodes="{{modal.body}}"></rich-text>
+    </scroll-view>
+    <view class="macts">
+      <button wx:for="{{modal.actions}}" wx:key="idx" class="mbtn {{item.cls}}"
+        catchtap="onModalAction" data-i="{{item.idx}}">{{item.label}}</button>
+    </view>
+  </view>
+</view>
+
+<!-- 客人：公开/私密提示弹窗（声明式） -->
+<view class="mroot {{guestModal?'show':''}}">
+  <view class="mbox" wx:if="{{guestModal}}" catchtap="noop">
+    <view class="mtitle">{{guestModal.title}}</view>
+    <scroll-view scroll-y class="mbodyS">
+      <rich-text nodes="{{guestModal.body}}"></rich-text>
+    </scroll-view>
+    <view class="macts">
+      <button wx:for="{{guestModal.actions}}" wx:key="idx" class="mbtn {{item.cls}}"
+        catchtap="onGuestAction" data-i="{{item.idx}}">{{item.label}}</button>
+    </view>
+  </view>
+</view>
+
+<!-- 客人：他人私密操作等待提示 -->
+<view class="mroot {{waitModal?'show':''}}">
+  <view class="mbox" wx:if="{{waitModal}}" catchtap="noop">
+    <view class="mtitle">{{waitModal.title}}</view>
+    <scroll-view scroll-y class="mbodyS">
+      <rich-text nodes="{{waitModal.body}}"></rich-text>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 客人：私密选牌弹层 -->
+<view class="mroot {{guestPick?'show':''}}">
+  <view class="mbox" wx:if="{{guestPick}}" catchtap="noop">
+    <view class="mtitle priv">🤫 你的私密操作</view>
+    <view class="privWarn">{{guestPick.prompt}}</view>
+    <view class="otherWarn">⚠ 其他玩家请移开视线！</view>
+    <view class="pickRow">
+      <view wx:for="{{guestPick.cards}}" wx:key="idx" class="pcard {{item.face.red?'red':''}} {{item.face.knight?'knight':''}} pickCard"
+        catchtap="onGuestPick" data-idx="{{item.idx}}">
+        <view class="corner"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+        <view class="pip">{{item.face.suit}}</view>
+        <view class="corner br"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 客人：查看自己的底牌 -->
+<view class="mroot {{peekModal?'show':''}}">
+  <view class="mbox" wx:if="{{peekModal}}" catchtap="noop">
+    <view class="mtitle priv">{{peekModal.title}}</view>
+    <scroll-view scroll-y class="mbodyS">
+      <rich-text nodes="{{peekModal.body}}"></rich-text>
+    </scroll-view>
+    <view class="macts">
+      <button class="mbtn" catchtap="closePeek">看完了，隐藏</button>
+    </view>
+  </view>
+</view>
+
+<!-- 私密选底牌弹层 -->
+<view class="mroot {{pick?'show':''}}">
+  <view class="mbox" wx:if="{{pick}}" catchtap="noop">
+    <view class="mtitle priv">{{pick.title}}</view>
+    <view class="privWarn">{{pick.prompt}}</view>
+    <view class="otherWarn">⚠ 其他玩家请移开视线！</view>
+    <view class="pickRow">
+      <view wx:for="{{pick.cards}}" wx:key="idx" class="pcard {{item.face.red?'red':''}} {{item.face.knight?'knight':''}} pickCard"
+        catchtap="onPickCard" data-idx="{{item.idx}}">
+        <view class="corner"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+        <view class="pip">{{item.face.suit}}</view>
+        <view class="corner br"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+      </view>
+    </view>
+  </view>
+</view>

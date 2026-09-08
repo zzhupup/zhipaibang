@@ -1,0 +1,29 @@
+/* 全局样式 */
+page {
+  background: radial-gradient(ellipse at 50% 0%, #1d5c3f, #144832 75%);
+  color: #eef3ef;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  font-size: 28rpx;
+}
+button {
+  font-family: inherit;
+}
+.btn {
+  background: linear-gradient(#3d9b6d, #2a7a50);
+  color: #fff;
+  border: 2rpx solid #57c48f;
+  border-radius: 16rpx;
+  padding: 18rpx 40rpx;
+  font-size: 30rpx;
+  line-height: 1.4;
+}
+.btn::after { border: none; }
+.btn.ghost {
+  background: transparent;
+  border: 2rpx solid #2e7a58;
+  color: #bfe3d0;
+}
+.btn.warn {
+  background: linear-gradient(#c0524d, #a03a36);
+  border-color: #e08580;
+}

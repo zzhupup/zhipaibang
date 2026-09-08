@@ -1,0 +1,46 @@
+<view class="wrap">
+  <view class="panel">
+    <!-- 创建方 -->
+    <block wx:if="{{action==='create' && roomId}}">
+      <view class="secTitle">房间已创建</view>
+      <view class="codeBox">
+        <text class="code">{{roomId}}</text>
+        <button class="copyBtn" catchtap="copyCode">复制</button>
+      </view>
+      <view class="hint">把房间号发给朋友，或在"加入房间"中输入</view>
+      <view class="shareTip">也可以直接点右上角 ··· 转发卡片给朋友</view>
+    </block>
+
+    <!-- 加入方 -->
+    <block wx:if="{{action==='join' && !roomId}}">
+      <view class="secTitle">加入房间</view>
+      <input class="codeInput" type="number" maxlength="6" placeholder="输入 6 位房间号"
+        value="{{joinCode}}" bindinput="onCode" />
+      <button class="btn" bindtap="doJoin" loading="{{loading}}">加入</button>
+    </block>
+
+    <!-- 加入成功等待中 -->
+    <block wx:if="{{action==='join' && roomId}}">
+      <view class="secTitle">已加入房间</view>
+      <view class="codeBox"><text class="code">{{roomId}}</text></view>
+      <view class="hint">等待房主开始对局…</view>
+    </block>
+
+    <view class="secTitle">帮众（{{players.length}}）</view>
+    <view class="plist">
+      <view wx:for="{{players}}" wx:key="openid" class="pitem {{item.seat===mySeat?'me':''}}">
+        <text class="pseat">{{item.seat+1}}号</text>
+        <text class="pname">{{item.name}}</text>
+        <text wx:if="{{item.seat===0}}" class="hostTag">房主</text>
+      </view>
+    </view>
+
+    <button wx:if="{{isHost}}" class="btn startBtn" bindtap="startGame"
+      disabled="{{players.length<3}}">开始对局{{players.length<3?'（至少 3 人）':''}}</button>
+
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:if="{{status==='over'}}" class="error">对局已结束</view>
+  </view>
+
+  <button class="btn ghost backBtn" bindtap="backHome">返回首页</button>
+</view>
