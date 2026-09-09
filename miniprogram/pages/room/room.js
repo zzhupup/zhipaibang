@@ -64,11 +64,18 @@ Page({
   },
 
   startWatch() {
-    // 玩家列表
+    // 立即主动拉一次玩家列表（防止 watch 初始推送为空或异常导致列表空白）
+    const applyList = list => {
+      if (list && list.length) {
+        const me = list.find(p => p.openid === this.myOpenid);
+        this.setData({ players: list, mySeat: me ? me.seat : this.data.mySeat });
+      }
+    };
+    cloudRoom.listPlayers(this.roomId).then(applyList).catch(err => console.warn('[room] 拉取玩家列表失败', err));
+    // 实时监听后续增减
     this.watcher = cloudRoom.watchPlayers(this.roomId, list => {
-      const me = list.find(p => p.openid === this.myOpenid);
-      this.setData({ players: list, mySeat: me ? me.seat : -1 });
-    }, e => this.setData({ error: '实时连接中断，请重进' }));
+      applyList(list);
+    }, e => { console.warn('[room] players watch 错误', e); this.setData({ error: '实时连接中断，请重进' }); });
     // 房间状态（开局后自动进入牌桌）
     this.roomWatcher = cloudRoom.watchRoom(this.roomId, doc => {
       this.setData({ status: doc.status });
