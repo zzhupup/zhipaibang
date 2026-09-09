@@ -52,11 +52,15 @@ const S = {
   centerChips: new Set(),
   chalDeck: [], expDeck: [],
   activeChallenge: null, activeExpert: null,
+  activeChallenges: [],   // 本劫案同时生效的全部挑战牌 id（自定义模式勾选多张并行生效）
   lastHeistResult: null,
   showdownRows: null,   // 摊牌结果板（全员同屏）
   boardGate: null,      // 结果板结算门 { fail }：等"完成"按钮放行
   logArr: [],
 };
+
+/* 本劫案是否生效某张挑战牌（支持多张并行） */
+function chal(id) { return S.activeChallenges.indexOf(id) >= 0; }
 
 /* ---------------- UI 适配（由牌桌页注入） ---------------- */
 function setUI(adapter) { ui = adapter; }
@@ -119,9 +123,11 @@ function showLog() {
 }
 function showRoundInfo() {
   let body = '';
-  if (S.activeChallenge) {
-    const c = CHALLENGES[S.activeChallenge];
-    body += `<div style="background:rgba(127,178,255,.1);border:2rpx dashed #7fb2ff;border-radius:12rpx;padding:12rpx 20rpx;margin-bottom:12rpx;font-size:25rpx;line-height:1.7"><b style="color:#7fb2ff">🃏 挑战牌 · ${c.name}</b><br>${c.text}</div>`;
+  if (S.activeChallenges.length) {
+    S.activeChallenges.forEach(id => {
+      const c = CHALLENGES[id];
+      body += `<div style="background:rgba(127,178,255,.1);border:2rpx dashed #7fb2ff;border-radius:12rpx;padding:12rpx 20rpx;margin-bottom:12rpx;font-size:25rpx;line-height:1.7"><b style="color:#7fb2ff">🃏 挑战牌 · ${c.name}</b><br>${c.text}</div>`;
+    });
   }
   if (S.activeExpert) {
     const c = EXPERTS[S.activeExpert];
@@ -201,10 +207,10 @@ function newGame(config) {
   S.chalDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   S.expDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   S.activeChallenge = null; S.activeExpert = null;
-  /* 自定义模式：host 勾选的挑战牌池（id 数组），每次劫案从池中轮换抽一张 */
+  S.activeChallenges = [];
+  /* 自定义模式：host 勾选的挑战牌池（id 数组），全部同时生效 */
   S.customPool = (Array.isArray(config.customChals) && config.customChals.length)
     ? config.customChals.map(Number) : null;
-  S.customQueue = S.customPool ? poker.shuffle(S.customPool.slice()) : [];
   S.lastHeistResult = null;
   S.showdownRows = null;
   S.boardGate = null; boardResolve = null;
@@ -225,31 +231,33 @@ async function startHeist() {
   S.heist++;
   S.deck = freshDeck(); S.discard = [];
   S.community = []; S.round = 0; S.phase = 'idle';
-  S.activeChallenge = null; S.activeExpert = null;
+  S.activeChallenge = null; S.activeExpert = null; S.activeChallenges = [];
   S.players.forEach(p => { p.chips = { white: null, yellow: null, orange: null, red: null }; p.striker = false; p.msg = ''; });
   ui.render();
 
   if (S.mode === 'custom' && S.customPool && S.customPool.length) {
-    // 自定义：每次劫案都从房主勾选的挑战牌池轮换抽一张（抽完洗混重排）
-    if (!S.customQueue.length) S.customQueue = poker.shuffle(S.customPool.slice());
-    S.activeChallenge = S.customQueue.shift();
-    log(`启用挑战牌：${CHALLENGES[S.activeChallenge].name}`, true);
+    // 自定义：房主勾选的全部挑战牌在本局每次劫案同时生效
+    S.activeChallenges = S.customPool.slice();
+    log(`启用挑战牌（${S.activeChallenges.length} 张同时生效）：${S.activeChallenges.map(id => CHALLENGES[id].name).join('、')}`, true);
   } else if (S.mode === 'advanced' && S.heist >= 2 && S.lastHeistResult !== null) {
     if (S.lastHeistResult) {
-      S.activeChallenge = drawCardId(S.chalDeck);
-      log(`启用挑战牌：${CHALLENGES[S.activeChallenge].name}`, true);
+      S.activeChallenges = [drawCardId(S.chalDeck)];
+      log(`启用挑战牌：${CHALLENGES[S.activeChallenges[0]].name}`, true);
     } else {
       S.activeExpert = drawCardId(S.expDeck);
       log(`启用专家牌：${EXPERTS[S.activeExpert].name}`, true);
     }
   }
+  S.activeChallenge = S.activeChallenges[0] || null;   // 兼容旧字段（快照/顶栏牌名）
 
   let introBody = `<div>第 <b style="color:#e8c15a">${S.heist}</b> 次劫案开始！洗混扑克牌，将剩余牌正面朝下放于桌面中央。</div>`;
-  if (S.activeChallenge) introBody += noteBox(`🃏 本劫案生效挑战牌：<b style="color:#7fb2ff">${CHALLENGES[S.activeChallenge].name}</b><br>${CHALLENGES[S.activeChallenge].text}`);
+  if (S.activeChallenges.length) {
+    introBody += S.activeChallenges.map(id => noteBox(`🃏 本劫案生效挑战牌：<b style="color:#7fb2ff">${CHALLENGES[id].name}</b><br>${CHALLENGES[id].text}`)).join('');
+  }
   if (S.activeExpert) introBody += noteBox(`👔 本劫案生效专家牌：<b style="color:#f0a0e8">${EXPERTS[S.activeExpert].name}</b><br>${EXPERTS[S.activeExpert].text}`);
   await ui.modal({ title: `💰 第 ${S.heist} 次劫案`, body: introBody, actions: [{ label: '开始' }] });
 
-  const holeN = S.activeChallenge === 10 ? 3 : 2;
+  const holeN = chal(10) ? 3 : 2;
   S.players.forEach(p => { p.hole = []; for (let k = 0; k < holeN; k++) p.hole.push(S.deck.pop()); });
   ui.render();
 
@@ -270,7 +278,7 @@ async function startHeist() {
 
   if (S.activeExpert) await runExpertPrePhase();
 
-  if (S.activeChallenge === 1) {
+  if (chal(1)) {
     log('挑战牌【突击入场】：跳过白色筹码轮，直接进入第2轮。', true);
     await ui.modal({ title: '🃏 突击入场', body: '白色筹码放在一边，第1轮只分发底牌，现在直接进入第 2 轮！', actions: [{ label: '进入第2轮' }] });
     startRound(2);
@@ -403,7 +411,7 @@ async function runExpertPrePhase() {
 async function startRound(n) {
   S.round = n;
   const prevColor = ROUND_COLOR[n - 1];
-  if (S.activeChallenge === 8 && n >= 2) {
+  if (chal(8) && n >= 2) {
     S.players.forEach(p => p.chips[prevColor] = null);
     log(`挑战牌【切断电源】：第 ${n} 轮开始，所有${COLOR_TXT[prevColor]}筹码被弃置！（须凭记忆）`, true);
   }
@@ -422,19 +430,19 @@ async function startRound(n) {
     log(`第${n}轮翻公共牌：${cardsTxt}`, true);
   }
 
-  if (n === 2 && (S.activeChallenge === 3 || S.activeChallenge === 7)) {
+  if (n === 2 && (chal(3) || chal(7))) {
     const hasFace = S.community.slice(0, 3).some(c => c.r >= 11 && c.r <= 13);
-    if (S.activeChallenge === 3 && hasFace) {
+    if (chal(3) && hasFace) {
       const i = findChipHolder('white', 1);
       if (i >= 0) await forceRedraw(i, '红外感应', '第2轮公共牌中出现了 J/Q/K！');
-    } else if (S.activeChallenge === 7 && !hasFace) {
+    } else if (chal(7) && !hasFace) {
       const maxStar = S.players.reduce((m, p) => Math.max(m, p.chips.white ? p.chips.white.star : 0), 0);
       const i = findChipHolder('white', maxStar);
       if (i >= 0) await forceRedraw(i, '激光网格', '第2轮公共牌中没有任何 J/Q/K！');
     }
   }
 
-  if (n === 3 && S.activeChallenge === 5) {
+  if (n === 3 && chal(5)) {
     log('挑战牌【割玻璃】：第3轮不分配橙色筹码，直接进入第4轮。', true);
     await ui.modal({ title: '🃏 割玻璃', body: '第3轮不分配橙色筹码！已翻开第4张公共牌，直接进入第4轮。', actions: [{ label: '进入第4轮' }] });
     startRound(4);
@@ -477,8 +485,8 @@ async function forceRedraw(i, challName, reason) {
 
 /* ---------------- 筹码操作 ---------------- */
 function isDarkChip(round, star) {
-  if (S.activeChallenge === 2) return round <= 3 && star === 1;
-  if (S.activeChallenge === 6) return round <= 3 && star === S.n;
+  if (chal(2) && round <= 3 && star === 1) return true;
+  if (chal(6) && round <= 3 && star === S.n) return true;
   return false;
 }
 function takeCenter(star) {
@@ -589,7 +597,7 @@ async function showdown() {
 
   /* 挑战牌：在亮牌前对红筹码最多者发起验证（不能先看到牌面） */
   const maxO = order[order.length - 1];
-  if (S.activeChallenge === 4) {
+  if (chal(4)) {
     const guess = await ui.modal({
       title: '🚨 虹膜验证',
       body: `在亮牌之前，其余玩家共同商讨并猜测 <b>${maxO.p.name}</b> 的一张底牌数值（他不能参与、不能提示）：`,
@@ -603,7 +611,7 @@ async function showdown() {
     log(`虹膜验证通过：${maxO.p.name} 的底牌中确有 ${RANK_TXT[guess]}。`, true);
     await ui.modal({ title: '✅ 虹膜验证通过', body: `${maxO.p.name} 的底牌中确实有一张 <b>${RANK_TXT[guess]}</b>！继续摊牌。`, actions: [{ label: '继续' }] });
   }
-  if (S.activeChallenge === 9) {
+  if (chal(9)) {
     const guess = await ui.modal({
       title: '🚨 指纹比对',
       body: `在亮牌之前，其余玩家共同商讨并猜测 <b>${maxO.p.name}</b> 的<b>牌型</b>（他不能参与、不能提示）：`,
@@ -664,7 +672,9 @@ async function heistEnd(success, failReason) {
     log(`第 ${S.heist} 次劫案失败！警报牌翻至红色面（${S.alarms}/3）。`, true);
   }
   ui.render();
-  if (S.activeChallenge) { S.chalDeck.push(S.activeChallenge); S.activeChallenge = null; }
+  // 进阶模式：把本劫案抽的挑战牌放回牌堆；自定义模式池子常驻无需回收
+  if (S.mode === 'advanced' && S.activeChallenges.length) S.chalDeck.push(S.activeChallenges[0]);
+  S.activeChallenges = []; S.activeChallenge = null;
   if (S.activeExpert) { S.expDeck.push(S.activeExpert); S.activeExpert = null; }
 
   if (S.vaults >= 3 || S.alarms >= 3) {
@@ -688,7 +698,7 @@ async function heistEnd(success, failReason) {
       (success ? '你们每次翻开的牌都不弱于上一次——完美配合！将一张<b>金库牌</b>翻至金色面。' : '一张<b>警报牌</b>翻至红色面。摊牌后当次劫案结束。') +
       `<br>当前进度：金库 <b>${S.vaults}/3</b> · 警报 <b>${S.alarms}/3</b>` +
       (S.mode === 'advanced' ? `<br>${success ? '下一次劫案将启用一张新的<b>挑战牌</b>提升难度。' : '下一次劫案将启用一张<b>专家牌</b>降低难度。'}`
-        : (S.mode === 'custom' ? '<br>下一次劫案将从自选挑战牌池中轮换启用下一张。' : ''))
+        : (S.mode === 'custom' ? '<br>勾选的挑战牌将在后续每次劫案持续全部生效。' : ''))
     )}从第 1 轮开始下一次劫案。`,
     actions: [{ label: success ? '下次劫案（更具挑战）' : '重整旗鼓，下次劫案' }]
   });
@@ -715,7 +725,7 @@ function getSnapshot() {
     roundColor: ROUND_COLOR[S.round] || 'white',
     roundName: ROUND_NAME[S.round] || '劫案准备',
     confirmedCount: S.confirmed.filter(Boolean).length,
-    activeChallenge: S.activeChallenge ? CHALLENGES[S.activeChallenge].name : null,
+    activeChallenge: S.activeChallenges.length ? S.activeChallenges.map(id => CHALLENGES[id].name).join(' + ') : null,
     activeExpert: S.activeExpert ? EXPERTS[S.activeExpert].name : null,
     players: S.players.map((p, i) => ({
       name: p.name,

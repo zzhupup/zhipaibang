@@ -61,7 +61,7 @@
             </view>
           </view>
         </scroll-view>
-        <view class="modeHint" wx:if="{{isHost}}">已选 {{customCount}} 张 · 每次劫案从所选玩法中轮换生效（至少选 1 张）</view>
+        <view class="modeHint" wx:if="{{isHost}}">已选 {{customCount}} 张 · 勾选的玩法将同时生效（至少选 1 张）</view>
       </block>
     </block>
 
