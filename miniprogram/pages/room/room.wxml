@@ -35,6 +35,18 @@
       </view>
     </view>
 
+    <!-- 游戏模式：房主切换，全员实时可见 -->
+    <block wx:if="{{roomId}}">
+      <view class="secTitle">游戏模式</view>
+      <view class="segRow">
+        <button class="opt {{gameMode==='standard'?'sel':''}} {{isHost?'':'dis'}}"
+          bindtap="pickMode" data-v="standard">标准</button>
+        <button class="opt {{gameMode==='advanced'?'sel':''}} {{isHost?'':'dis'}}"
+          bindtap="pickMode" data-v="advanced">进阶</button>
+      </view>
+      <view class="modeHint">{{gameMode==='advanced'?'启用挑战牌与专家牌（各 10 张），更刺激':'第一次玩建议标准模式'}}</view>
+    </block>
+
     <button wx:if="{{isHost}}" class="btn startBtn" bindtap="startGame"
       disabled="{{players.length<3}}">开始对局{{players.length<3?'（至少 3 人）':''}}</button>
 

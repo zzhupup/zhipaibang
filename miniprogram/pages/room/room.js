@@ -9,6 +9,7 @@ Page({
     players: [],
     joinCode: '',
     status: 'lobby',
+    gameMode: 'standard',    // standard | advanced（房主选择，写房间文档同步给所有人）
     error: '',
     loading: false,
   },
@@ -107,6 +108,10 @@ Page({
         this.setData({ isHost: true });
         wx.showToast({ title: '房主已离开，你成为新房主', icon: 'none' });
       }
+      // 游戏模式同步（房主切换后全员可见）
+      if (doc.gameMode && doc.gameMode !== this.data.gameMode) {
+        this.setData({ gameMode: doc.gameMode });
+      }
       this.setData({ status: doc.status });
       if (doc.status === 'playing') {
         this._enteringTable = true;
@@ -122,6 +127,15 @@ Page({
     wx.setClipboardData({ data: this.data.roomId });
   },
 
+  /* 房主切换 标准/进阶 模式（写入房间文档，全员实时可见） */
+  pickMode(e) {
+    if (!this.data.isHost) { wx.showToast({ title: '只有房主可以切换模式', icon: 'none' }); return; }
+    const v = e.currentTarget.dataset.v;
+    if (v === this.data.gameMode) return;
+    this.setData({ gameMode: v });
+    cloudRoom.updateRoom(this.roomId, { gameMode: v }).catch(() => {});
+  },
+
   async startGame() {
     const list = this.data.players;
     if (list.length < 3) {
@@ -129,8 +143,9 @@ Page({
       return;
     }
     // 关键：联机开局必须用在线玩家列表初始化引擎（此前缺失导致空状态：牌堆52不发牌/无筹码/崩溃）
+    // mode 传引擎档位（standard/advanced），挑战牌/专家牌逻辑与单机完全一致
     const game = require('../../utils/game.js');
-    game.newGame({ mode: 'online', n: list.length, names: list.map(p => p.name) });
+    game.newGame({ mode: this.data.gameMode === 'advanced' ? 'advanced' : 'standard', n: list.length, names: list.map(p => p.name) });
     try {
       await cloudRoom.updateRoom(this.roomId, { status: 'playing' });
     } catch (e) {

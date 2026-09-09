@@ -37,6 +37,25 @@
 .pseat { color: #e8c15a; font-size: 24rpx; width: 70rpx; }
 .pname { color: #eef3ef; font-size: 27rpx; flex: 1; }
 .hostTag { font-size: 20rpx; color: #7fb2ff; border: 2rpx solid #7fb2ff; border-radius: 6rpx; padding: 2rpx 10rpx; }
+
+/* ---- 标准/进阶模式选择 ---- */
+.segRow { display: flex; gap: 14rpx; }
+.opt {
+  flex: 1;
+  background: rgba(255,255,255,.06);
+  border: 2rpx solid rgba(46,122,88,.8);
+  color: #d7eade;
+  padding: 14rpx 0;
+  border-radius: 14rpx;
+  font-size: 27rpx;
+  line-height: 1.4;
+  margin: 0;
+}
+.opt::after { border: none; }
+.opt.sel { background: linear-gradient(#3d9b6d, #2a7a50); border-color: #7dd8a8; color: #fff; font-weight: bold; }
+.opt.dis { opacity: .75; }
+.modeHint { font-size: 22rpx; color: #7ba28e; margin-top: 12rpx; text-align: center; }
+
 .startBtn { display: block; margin: 30rpx auto 0; width: 80%; }
 .error { color: #ff9a90; font-size: 24rpx; margin-top: 16rpx; text-align: center; }
 .backBtn { display: block; margin: 24rpx auto 0; width: 60%; }
