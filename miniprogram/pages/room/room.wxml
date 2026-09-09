@@ -42,5 +42,5 @@
     <view wx:if="{{status==='over'}}" class="error">对局已结束</view>
   </view>
 
-  <button class="btn ghost backBtn" bindtap="backHome">返回首页</button>
+  <button class="btn ghost backBtn" bindtap="backHome">退出房间</button>
 </view>

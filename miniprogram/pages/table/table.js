@@ -46,6 +46,7 @@ Page({
     this.mode = options.mode || 'single';          // single | host | guest
     this.roomId = options.roomId || '';
     this.mySeat = options.seat !== undefined ? +options.seat : 0;
+    this.myPlayerId = options.pid || '';           // 玩家文档 _id（离开房间/座位校正用）
     this.setData({ playMode: this.mode, mySeat: this.mySeat });
 
     let winW = 375, winH = 667;
@@ -84,7 +85,6 @@ Page({
       // 客人：只渲染 + 发送操作
       cloudRoom.init();
       this.shownPromptPid = 0;
-      this.myPlayerId = options.pid || '';
       this.watchAsGuestWithSeat();
     }
   },
@@ -341,11 +341,25 @@ Page({
   onLog() { game.showLog(); },
   onInfo() { game.showRoundInfo(); },
   onRestart() {
+    const content = this.mode === 'single'
+      ? '确定要放弃当前对局并返回首页吗？'
+      : this.mode === 'host'
+        ? '你是房主：退出将结束本次对局并离开房间。确定吗？'
+        : '退出将离开房间（对局仍在其他玩家间进行）。确定吗？';
     wx.showModal({
       title: '退出对局',
-      content: this.mode === 'single' ? '确定要放弃当前对局并返回首页吗？' : '退出后可以重新加入，但对局仍在进行。确定返回首页吗？',
+      content,
       confirmColor: '#c0524d',
-      success: res => { if (res.confirm) wx.navigateBack(); },
+      success: res => {
+        if (!res.confirm) return;
+        if (this.mode === 'host') {
+          cloudRoom.updateRoom(this.roomId, { status: 'over' }).catch(() => {});
+          if (this.myPlayerId) cloudRoom.leaveRoom(this.roomId, this.myPlayerId).catch(() => {});
+        } else if (this.mode === 'guest' && this.myPlayerId) {
+          cloudRoom.leaveRoom(this.roomId, this.myPlayerId).catch(() => {});
+        }
+        wx.navigateBack();
+      },
     });
   },
 
@@ -393,6 +407,7 @@ Page({
   watchAsGuest() {
     // 房间公开快照
     this._roomWatcher = cloudRoom.watchRoom(this.roomId, doc => {
+      if (!doc) return;                       // 房间被解散/删除：忽略（界面停在本地）
       if (doc.status === 'over') { this.toast('对局已结束'); }
       if (doc.public && doc.public.players) {
         this._lastSnap = doc.public;

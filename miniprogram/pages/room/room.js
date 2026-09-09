@@ -23,6 +23,10 @@ Page({
   onUnload() {
     if (this.watcher) this.watcher.close();
     if (this.roomWatcher) this.roomWatcher.close();
+    // 页面卸载（含手势返回）= 离开房间；进牌桌的重定向除外
+    if (!this._enteringTable && this.roomId && this.myPlayerId) {
+      cloudRoom.leaveRoom(this.roomId, this.myPlayerId).catch(() => {});
+    }
   },
 
   onShareAppMessage() {
@@ -75,10 +79,22 @@ Page({
     this.watcher = cloudRoom.watchPlayers(this.roomId, list => {
       applyList(list);
     }, e => { console.warn('[room] players watch 错误', e); this.setData({ error: '实时连接中断，请重进' }); });
-    // 房间状态（开局后自动进入牌桌）
+    // 房间状态（开局后自动进入牌桌；文档被删 = 房间解散）
     this.roomWatcher = cloudRoom.watchRoom(this.roomId, doc => {
+      if (!doc || !doc.status) {
+        wx.showToast({ title: '房间已解散', icon: 'none' });
+        this._enteringTable = true;   // 防止 onUnload 再次触发 leaveRoom
+        setTimeout(() => wx.navigateBack(), 1200);
+        return;
+      }
+      // 房主转移检测：hostPid 变成自己（前房主离开）
+      if (doc.hostPid && doc.hostPid === this.myPlayerId && !this.data.isHost) {
+        this.setData({ isHost: true });
+        wx.showToast({ title: '房主已离开，你成为新房主', icon: 'none' });
+      }
       this.setData({ status: doc.status });
       if (doc.status === 'playing') {
+        this._enteringTable = true;
         const mode = this.data.isHost ? 'host' : 'guest';
         wx.redirectTo({
           url: `/pages/table/table?mode=${mode}&roomId=${this.roomId}&seat=${this.data.mySeat}&pid=${this.myPlayerId || ''}`,
@@ -103,5 +119,15 @@ Page({
     await cloudRoom.updateRoom(this.roomId, { status: 'playing' });
   },
 
-  backHome() { wx.navigateBack(); },
+  backHome() {
+    if (!this.roomId || !this.myPlayerId) { wx.navigateBack(); return; }
+    wx.showModal({
+      title: '退出房间',
+      content: this.data.isHost
+        ? '退出后房主将自动转交给下一位玩家；若无人剩余，房间自动解散。确定退出吗？'
+        : '确定退出该房间吗？',
+      confirmColor: '#c0524d',
+      success: res => { if (res.confirm) wx.navigateBack(); },
+    });
+  },
 });

@@ -35,15 +35,17 @@ async function createRoom(name) {
       if (doc.data) { code = genCode(); continue; }
     } catch (e) { /* 不存在则继续 */ break; }
   }
+  // 先建玩家文档拿到 playerId；房间文档记录 hostPid（房主离开时据此转交）
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
   await db.collection('rooms').doc(code).set({
     data: {
       status: 'lobby',
+      hostPid: p._id,
       hostName: name || '房主',
       createdAt: Date.now(),
       public: {},
     }
   });
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
   return { roomId: code, playerId: p._id };
 }
 
@@ -61,6 +63,30 @@ async function joinRoom(code, name) {
 async function listPlayers(roomId) {
   const res = await db.collection('players').where({ roomId }).orderBy('created', 'asc').limit(20).get();
   return res.data.map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
+}
+
+/* ---------- 离开房间 ----------
+   1. 删除自己的玩家文档（其余客户端列表实时更新）
+   2. 房主离开 → hostPid 转交给最早加入的剩余玩家
+   3. 无人剩余 → 删除房间文档（解散） */
+async function leaveRoom(roomId, playerId) {
+  if (!roomId || !playerId) return {};
+  init();
+  try { await db.collection('players').doc(playerId).remove(); } catch (e) {}
+  const res = await db.collection('players').where({ roomId }).limit(20).get().catch(() => null);
+  const list = res ? res.data.slice().sort((a, b) => a.created - b.created) : [];
+  if (!list.length) {
+    try { await db.collection('rooms').doc(roomId).remove(); } catch (e) {}
+    return { dissolved: true };
+  }
+  const room = await db.collection('rooms').doc(roomId).get().catch(() => null);
+  if (room && room.data && room.data.hostPid === playerId) {
+    await db.collection('rooms').doc(roomId).update({
+      data: { hostPid: list[0]._id, hostName: list[0].name },
+    }).catch(() => {});
+    return { newHostPid: list[0]._id };
+  }
+  return {};
 }
 
 /* ---------- 实时监听通用包装：断线自动重连 ----------
@@ -183,7 +209,7 @@ async function removeAction(actionId) {
 }
 
 module.exports = {
-  ENV_ID, init, createRoom, joinRoom, listPlayers,
+  ENV_ID, init, createRoom, joinRoom, listPlayers, leaveRoom,
   watchRoom, watchPlayers, watchHand, watchActions,
   updateRoomPublic, updateRoom, writeHands,
   setHandPrompt, clearHandPrompt, sendAction, removeAction,
