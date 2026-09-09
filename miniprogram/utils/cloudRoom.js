@@ -184,26 +184,28 @@ async function updateRoomPublic(roomId, snap) {
 async function updateRoom(roomId, data) {
   await db.collection('rooms').doc(roomId).update({ data });
 }
-/* ---------- 房主写私密文档（底牌） ---------- */
-async function writeHands(roomId, players, openids) {
-  for (let i = 0; i < players.length; i++) {
-    const docId = roomId + '_' + i;
-    try {
-      await db.collection('hands').doc(docId).update({ data: { hole: players[i].hole } });
-    } catch (e) {
-      // 首次不存在则创建
-      await db.collection('hands').doc(docId).set({
-        data: { roomId, owner: openids[i], seat: i, hole: players[i].hole, prompt: null }
-      });
-    }
-  }
+/* ---------- 房主写私密文档（底牌）—— 走云函数 handops，客户端对 hands 零写权限 ---------- */
+function writeHands(roomId, players, openids) {
+  return wx.cloud.callFunction({
+    name: 'handops',
+    data: { action: 'deal', roomId, players, owners: openids },
+  }).then(r => {
+    const res = r.result;
+    if (!res || !res.ok) throw new Error(res && res.error || 'handops deal failed');
+  });
 }
-/* ---------- 房主写/清私密弹窗 ---------- */
-async function setHandPrompt(roomId, seat, prompt) {
-  await db.collection('hands').doc(roomId + '_' + seat).update({ data: { prompt } });
+/* ---------- 房主写/清私密弹窗（同样走云函数） ---------- */
+function setHandPrompt(roomId, seat, prompt) {
+  return wx.cloud.callFunction({
+    name: 'handops',
+    data: { action: 'prompt', roomId, seat, prompt },
+  }).then(r => {
+    const res = r.result;
+    if (!res || !res.ok) throw new Error(res && res.error || 'handops prompt failed');
+  });
 }
-async function clearHandPrompt(roomId, seat) {
-  await db.collection('hands').doc(roomId + '_' + seat).update({ data: { prompt: null } });
+function clearHandPrompt(roomId, seat) {
+  return setHandPrompt(roomId, seat, null);
 }
 
 /* ---------- 操作馈送 ---------- */

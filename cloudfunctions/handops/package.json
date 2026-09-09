@@ -1,0 +1,9 @@
+{
+  "name": "handops",
+  "version": "1.0.0",
+  "description": "write hole cards / hand prompts with admin privilege (hands collection is client write:false)",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

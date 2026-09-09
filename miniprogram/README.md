@@ -32,7 +32,7 @@
 
 - 房主手机运行完整游戏引擎；其余手机为"视图 + 操作发送端"
 - 公开状态（公共牌/筹码/确认进度/全员弹窗）写入 `rooms` 文档，所有人 `watch` 实时刷新
-- **底牌隐私**：每人底牌写入 `hands/{roomId}_{seat}` 文档，安全规则限定只有本人可读；房主可写（发牌/换牌）
+- **底牌隐私**：每人底牌写入 `hands/{roomId}_{seat}` 文档，由云函数 `handops` 以管理权限写入；客户端对该集合零写权限（write:false），防篡改
 - 所有操作写入 `actions` 馈送，房主按序消费——并发抢筹码天然按先后顺序裁决
 
 ## 运行 / 部署
@@ -40,9 +40,9 @@
 1. 微信开发者工具导入项目，替换 `project.config.json` 的 `appid`
 2. **联机需开通云开发**（开发者工具 → 云开发 → 创建环境，基础版约 19.9 元/月），把环境 ID 填入 `utils/cloudRoom.js` 的 `ENV_ID`
 3. 云开发控制台创建 4 个集合并配置安全规则（权限 → 自定义安全规则）。
-   **注意**：① 房主可以转移，所以 rooms/hands/actions 不能限制"仅创建者可写"；
+   **注意**：① 房主可以转移，所以 rooms/actions 不能限制"仅创建者可写"；
    ② 规则表达式不支持 `null` 字面量（`auth.openid != null` 会报 rule invalid），
-   写权限直接用 `true`；③ 粘贴时不能带 `//` 注释：
+   也不支持 `resource.<自定义字段>`；③ 粘贴时不能带 `//` 注释：
 
 ```json
 // rooms：任何用户可写（快照/状态/hostPid 转移，无敏感数据）
@@ -51,15 +51,16 @@
 // players：只能写自己的文档（心跳/退出删除）
 { "read": true, "write": "auth.openid == resource._openid" }
 
-// hands：全放开。部分环境规则引擎不支持 resource.<自定义字段>（resource.owner 会报
-// rule invalid）；且本游戏底牌为"明牌"设计，无隐私收益，后续如需收紧改用云函数写
-{ "read": true, "write": true }
+// hands：客户端零写权限，防篡改；底牌由云函数 handops（管理权限）写入
+{ "read": true, "write": false }
 
 // actions：操作馈送，任何用户可读写（房主需删除他人文档消费馈送）
 { "read": true, "write": true }
 ```
 
-4. 编译后即可：创建房间 → 分享房间号/卡片 → 好友加入 → 开始对局
+4. **部署云函数 `handops`**（底牌写入唯一通道）：开发者工具左侧资源管理器 →
+   `cloudfunctions/handops` 右键 → 「上传并部署：云端安装依赖（不上传 node_modules）」
+5. 编译后即可：创建房间 → 分享房间号/卡片 → 好友加入 → 开始对局
 
 ## 测试
 
