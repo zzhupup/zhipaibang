@@ -361,13 +361,21 @@
   font-size: 26rpx; padding: 0; border-radius: 34rpx;
   background: #3d9b6d; color: #fff; border: 2rpx solid #57c48f;
 }
-/* 座位内发言气泡：比系统提示更醒目 */
+/* 座位顶层发言：昵称左侧，超长自动跑马灯滑动 */
 .msg { font-size: 20rpx; color: #a9cbbb; }
-.msg.chat {
-  display: block; margin-top: 6rpx; padding: 8rpx 16rpx;
-  background: rgba(232,193,90,.12); border: 2rpx dashed rgba(232,193,90,.5);
-  border-radius: 10rpx; color: #ffe9b0; font-size: 22rpx; line-height: 1.5;
-  word-break: break-all;
+.seatHead .pname { flex: 0 1 auto; min-width: 0; }
+.chatTicker {
+  flex: 1; min-width: 0; overflow: hidden; white-space: nowrap;
+  background: rgba(232,193,90,.14); border: 2rpx dashed rgba(232,193,90,.5);
+  border-radius: 8rpx; padding: 2rpx 10rpx; margin-right: 8rpx;
+}
+.chatTickerTxt {
+  display: inline-block; color: #ffe9b0; font-size: 22rpx; line-height: 1.5;
+}
+.chatTickerTxt.run { padding-left: 100%; animation: chatMarquee linear infinite; }
+@keyframes chatMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 
 /* ---------- 整局结束操作栏 ---------- */

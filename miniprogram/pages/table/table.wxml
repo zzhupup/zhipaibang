@@ -105,6 +105,10 @@
   <!-- 模板：座位内部 -->
   <template name="tSeat">
     <view class="seatHead">
+      <view wx:if="{{p.msg}}" class="chatTicker">
+        <text class="chatTickerTxt {{p.msg.length > 8 ? 'run' : ''}}"
+          style="{{p.msg.length > 8 ? 'animation-duration:' + (p.msg.length * 0.4) + 's' : ''}}">{{p.msg}}</text>
+      </view>
       <text class="pname">{{p.name}}</text>
       <text wx:if="{{p.striker}}" class="badge">👊</text><text wx:if="{{p.isMe}}" class="badge me">你</text>
     </view>
@@ -149,7 +153,6 @@
         catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
     </view>
     <text wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</text>
-    <text wx:if="{{p.msg}}" class="msg chat">{{p.msg}}</text>
   </template>
 
   <!-- ============ 宽屏：圆桌舞台 ============ -->
