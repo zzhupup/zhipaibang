@@ -67,8 +67,8 @@ function createHostUI(opts) {
     /* 房主本机渲染 + 广播 */
     render: async () => {
       const snap = withPrompt(game.getSnapshot(), publicPrompt);
-      try { await cloudRoom.updateRoomPublic(roomId, snap); } catch (e) {}
-      try { await cloudRoom.writeHands(roomId, game.state.players, players.map(p => p.openid)); } catch (e) {}
+      try { await cloudRoom.updateRoomPublic(roomId, snap); } catch (e) { console.error('[host] 公开快照广播失败', e && (e.errMsg || e.message || e)); }
+      try { await cloudRoom.writeHands(roomId, game.state.players, players.map(p => p.openid)); } catch (e) { console.error('[host] 底牌写入失败', e && (e.errMsg || e.message || e)); }
       page.sync(snap);
     },
 
