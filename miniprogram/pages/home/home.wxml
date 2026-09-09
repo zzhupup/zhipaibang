@@ -31,7 +31,7 @@
     <!-- 在线联机 -->
     <block wx:if="{{playMode==='online'}}">
       <view class="nickRow">
-        <view class="secTitle">你的昵称</view>
+        <view class="secTitle nickTitle">昵称</view>
         <input class="nickInput" placeholder="给自己起个代号" placeholder-class="phc"
           maxlength="8" value="{{nick}}" bindinput="onNick" />
       </view>
