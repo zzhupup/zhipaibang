@@ -43,8 +43,26 @@
           bindtap="pickMode" data-v="standard">标准</button>
         <button class="opt {{gameMode==='advanced'?'sel':''}} {{isHost?'':'dis'}}"
           bindtap="pickMode" data-v="advanced">进阶</button>
+        <button class="opt {{gameMode==='custom'?'sel':''}} {{isHost?'':'dis'}}"
+          bindtap="pickMode" data-v="custom">自定义</button>
       </view>
-      <view class="modeHint">{{gameMode==='advanced'?'启用挑战牌与专家牌（各 10 张），更刺激':'第一次玩建议标准模式'}}</view>
+      <view class="modeHint">{{gameMode==='advanced'?'启用全部挑战牌与专家牌（各 10 张），更刺激':(gameMode==='custom'?'从下方勾选本次要启用的挑战牌玩法':'第一次玩建议标准模式')}}</view>
+
+      <!-- 自定义：挑战牌勾选列表（多选，房主操作，全员同步可见） -->
+      <block wx:if="{{gameMode==='custom'}}">
+        <scroll-view scroll-y class="chalList">
+          <view wx:for="{{chalList}}" wx:key="id"
+            class="chalItem {{item.checked?'on':''}}"
+            bindtap="toggleChal" data-id="{{item.id}}">
+            <view class="cbox">{{item.checked?'✓':''}}</view>
+            <view class="cinfo">
+              <view class="cname">{{item.name}}</view>
+              <view class="ctext">{{item.text}}</view>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="modeHint" wx:if="{{isHost}}">已选 {{customCount}} 张 · 每次劫案从所选玩法中轮换生效（至少选 1 张）</view>
+      </block>
     </block>
 
     <button wx:if="{{isHost}}" class="btn startBtn" bindtap="startGame"

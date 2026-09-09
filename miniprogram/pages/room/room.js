@@ -1,4 +1,10 @@
 const cloudRoom = require('../../utils/cloudRoom.js');
+const { CHALLENGES } = require('../../utils/game.js');
+
+/* 自定义模式的挑战牌候选列表（id 1~10，名称+效果说明） */
+const CHAL_LIST = Object.keys(CHALLENGES).map(id => ({
+  id: +id, name: CHALLENGES[id].name, text: CHALLENGES[id].text, checked: false,
+}));
 
 Page({
   data: {
@@ -9,7 +15,9 @@ Page({
     players: [],
     joinCode: '',
     status: 'lobby',
-    gameMode: 'standard',    // standard | advanced（房主选择，写房间文档同步给所有人）
+    gameMode: 'standard',    // standard | advanced | custom（房主选择，写房间文档同步给所有人）
+    chalList: CHAL_LIST,     // 自定义模式：挑战牌勾选列表
+    customCount: 0,          // 已勾选数量
     error: '',
     loading: false,
   },
@@ -112,6 +120,18 @@ Page({
       if (doc.gameMode && doc.gameMode !== this.data.gameMode) {
         this.setData({ gameMode: doc.gameMode });
       }
+      // 自定义挑战牌勾选同步（房主勾选后全员实时可见）
+      if (Array.isArray(doc.customChals)) {
+        const prev = this.data.chalList.filter(c => c.checked).map(c => c.id).join(',');
+        const cur = doc.customChals.join(',');
+        if (prev !== cur) {
+          const sel = new Set(doc.customChals);
+          this.setData({
+            chalList: this.data.chalList.map(c => ({ ...c, checked: sel.has(c.id) })),
+            customCount: doc.customChals.length,
+          });
+        }
+      }
       this.setData({ status: doc.status });
       if (doc.status === 'playing') {
         this._enteringTable = true;
@@ -127,13 +147,27 @@ Page({
     wx.setClipboardData({ data: this.data.roomId });
   },
 
-  /* 房主切换 标准/进阶 模式（写入房间文档，全员实时可见） */
+  /* 房主切换 标准/进阶/自定义 模式（写入房间文档，全员实时可见） */
   pickMode(e) {
     if (!this.data.isHost) { wx.showToast({ title: '只有房主可以切换模式', icon: 'none' }); return; }
     const v = e.currentTarget.dataset.v;
     if (v === this.data.gameMode) return;
     this.setData({ gameMode: v });
     cloudRoom.updateRoom(this.roomId, { gameMode: v }).catch(() => {});
+  },
+
+  /* 自定义模式：房主勾选/取消挑战牌（多选，写入房间文档同步全员） */
+  toggleChal(e) {
+    if (!this.data.isHost) { wx.showToast({ title: '只有房主可以勾选', icon: 'none' }); return; }
+    const id = +e.currentTarget.dataset.id;
+    const sel = new Set(this.data.chalList.filter(c => c.checked).map(c => c.id));
+    if (sel.has(id)) sel.delete(id); else sel.add(id);
+    const arr = [...sel];
+    this.setData({
+      chalList: this.data.chalList.map(c => ({ ...c, checked: sel.has(c.id) })),
+      customCount: arr.length,
+    });
+    cloudRoom.updateRoom(this.roomId, { customChals: arr }).catch(() => {});
   },
 
   async startGame() {
@@ -143,9 +177,19 @@ Page({
       return;
     }
     // 关键：联机开局必须用在线玩家列表初始化引擎（此前缺失导致空状态：牌堆52不发牌/无筹码/崩溃）
-    // mode 传引擎档位（standard/advanced），挑战牌/专家牌逻辑与单机完全一致
+    // mode 传引擎档位（standard/advanced/custom），自定义需至少勾选 1 张挑战牌
+    let mode = this.data.gameMode === 'advanced' ? 'advanced' : 'standard';
+    let customChals;
+    if (this.data.gameMode === 'custom') {
+      customChals = this.data.chalList.filter(c => c.checked).map(c => c.id);
+      if (!customChals.length) {
+        this.setData({ error: '自定义模式：请至少勾选 1 张挑战牌' });
+        return;
+      }
+      mode = 'custom';
+    }
     const game = require('../../utils/game.js');
-    game.newGame({ mode: this.data.gameMode === 'advanced' ? 'advanced' : 'standard', n: list.length, names: list.map(p => p.name) });
+    game.newGame({ mode, n: list.length, names: list.map(p => p.name), customChals });
     try {
       await cloudRoom.updateRoom(this.roomId, { status: 'playing' });
     } catch (e) {

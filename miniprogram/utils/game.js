@@ -201,6 +201,10 @@ function newGame(config) {
   S.chalDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   S.expDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   S.activeChallenge = null; S.activeExpert = null;
+  /* 自定义模式：host 勾选的挑战牌池（id 数组），每次劫案从池中轮换抽一张 */
+  S.customPool = (Array.isArray(config.customChals) && config.customChals.length)
+    ? config.customChals.map(Number) : null;
+  S.customQueue = S.customPool ? poker.shuffle(S.customPool.slice()) : [];
   S.lastHeistResult = null;
   S.showdownRows = null;
   S.boardGate = null; boardResolve = null;
@@ -225,7 +229,12 @@ async function startHeist() {
   S.players.forEach(p => { p.chips = { white: null, yellow: null, orange: null, red: null }; p.striker = false; p.msg = ''; });
   ui.render();
 
-  if (S.mode === 'advanced' && S.heist >= 2 && S.lastHeistResult !== null) {
+  if (S.mode === 'custom' && S.customPool && S.customPool.length) {
+    // 自定义：每次劫案都从房主勾选的挑战牌池轮换抽一张（抽完洗混重排）
+    if (!S.customQueue.length) S.customQueue = poker.shuffle(S.customPool.slice());
+    S.activeChallenge = S.customQueue.shift();
+    log(`启用挑战牌：${CHALLENGES[S.activeChallenge].name}`, true);
+  } else if (S.mode === 'advanced' && S.heist >= 2 && S.lastHeistResult !== null) {
     if (S.lastHeistResult) {
       S.activeChallenge = drawCardId(S.chalDeck);
       log(`启用挑战牌：${CHALLENGES[S.activeChallenge].name}`, true);
@@ -678,7 +687,8 @@ async function heistEnd(success, failReason) {
     body: `${failReason || ''}${noteBox(
       (success ? '你们每次翻开的牌都不弱于上一次——完美配合！将一张<b>金库牌</b>翻至金色面。' : '一张<b>警报牌</b>翻至红色面。摊牌后当次劫案结束。') +
       `<br>当前进度：金库 <b>${S.vaults}/3</b> · 警报 <b>${S.alarms}/3</b>` +
-      (S.mode === 'advanced' ? `<br>${success ? '下一次劫案将启用一张新的<b>挑战牌</b>提升难度。' : '下一次劫案将启用一张<b>专家牌</b>降低难度。'}` : '')
+      (S.mode === 'advanced' ? `<br>${success ? '下一次劫案将启用一张新的<b>挑战牌</b>提升难度。' : '下一次劫案将启用一张<b>专家牌</b>降低难度。'}`
+        : (S.mode === 'custom' ? '<br>下一次劫案将从自选挑战牌池中轮换启用下一张。' : ''))
     )}从第 1 轮开始下一次劫案。`,
     actions: [{ label: success ? '下次劫案（更具挑战）' : '重整旗鼓，下次劫案' }]
   });

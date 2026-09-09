@@ -56,6 +56,35 @@
 .opt.dis { opacity: .75; }
 .modeHint { font-size: 22rpx; color: #7ba28e; margin-top: 12rpx; text-align: center; }
 
+/* ---- 自定义：挑战牌勾选列表 ---- */
+.chalList {
+  max-height: 480rpx;
+  margin-top: 6rpx;
+  border: 2rpx solid rgba(46,122,88,.5);
+  border-radius: 14rpx;
+  background: rgba(0,0,0,.22);
+}
+.chalItem {
+  display: flex; align-items: flex-start; gap: 14rpx;
+  padding: 16rpx 18rpx;
+  border-bottom: 2rpx solid rgba(46,122,88,.28);
+}
+.chalItem:last-child { border-bottom: none; }
+.chalItem.on { background: rgba(61,155,109,.16); }
+.cbox {
+  flex: none;
+  width: 38rpx; height: 38rpx; margin-top: 4rpx;
+  border: 3rpx solid #2e7a58; border-radius: 8rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; font-weight: bold; color: #7dd8a8;
+  box-sizing: border-box;
+}
+.chalItem.on .cbox { background: #2a7a50; border-color: #7dd8a8; color: #fff; }
+.cinfo { flex: 1; min-width: 0; }
+.cname { font-size: 26rpx; color: #e8c15a; font-weight: bold; }
+.chalItem.on .cname { color: #ffe9b0; }
+.ctext { font-size: 21rpx; color: #9fc7b2; line-height: 1.5; margin-top: 4rpx; }
+
 .startBtn { display: block; margin: 30rpx auto 0; width: 80%; }
 .error { color: #ff9a90; font-size: 24rpx; margin-top: 16rpx; text-align: center; }
 .backBtn { display: block; margin: 24rpx auto 0; width: 60%; }
