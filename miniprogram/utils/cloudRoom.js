@@ -60,14 +60,17 @@ async function joinRoom(code, name) {
   return { roomId: code, playerId: p._id };
 }
 
-/* ---------- 玩家列表（按加入时间排序 → 座位号；只保留 20 秒内有心跳的在线玩家） ---------- */
-const ONLINE_MS = 20000;
+/* ---------- 玩家列表（按加入时间排序 → 座位号；只保留 45 秒内有心跳的在线玩家） ---------- */
+const ONLINE_MS = 45000;
 function onlineFilter(d) {
   return d.lastSeen && Date.now() - d.lastSeen <= ONLINE_MS;
 }
 async function listPlayers(roomId) {
-  const res = await db.collection('players').where({ roomId }).orderBy('created', 'asc').limit(50).get();
+  // 关键：必须倒序取"最新 50 条"再过滤——正序 limit 会取到最早的文档，
+  // 被历史垃圾挤占后当前在线玩家的文档直接被截掉（曾导致发牌名单缺人）
+  const res = await db.collection('players').where({ roomId }).orderBy('created', 'desc').limit(50).get();
   return res.data.filter(onlineFilter)
+    .sort((a, b) => a.created - b.created)
     .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: d.lastSeen }));
 }
 

@@ -74,6 +74,7 @@ Page({
       cloudRoom.init();
       this._hb = cloudRoom.startHeartbeat(this.roomId, this.myPlayerId);   // 在线心跳
       cloudRoom.listPlayers(this.roomId).then(list => {
+        console.log('[host] 开局玩家名单（在线过滤后）:', list.map(p => p.seat + ':' + p.name).join(', '));
         this.seatOpenids = list.map(p => p.openid);
         const { ui } = createHostUI({
           page: this, roomId: this.roomId, mySeat: this.mySeat, players: list,
@@ -101,6 +102,7 @@ Page({
       return;
     }
     cloudRoom.listPlayers(this.roomId).then(list => {
+      console.log('[guest] 在线玩家名单:', list.map(p => p.seat + ':' + p.name).join(', '));
       const me = list.find(p => p.id === this.myPlayerId);
       if (me && me.seat !== this.mySeat) {
         console.log('[guest] 座位校正', this.mySeat, '→', me.seat);
