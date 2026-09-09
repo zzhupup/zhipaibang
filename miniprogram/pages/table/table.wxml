@@ -73,7 +73,6 @@
       </block>
       <view wx:if="{{p.canPeek}}" class="eye" catchtap="onPeek" data-i="{{p.i}}">👁</view>
     </view>
-    <view wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</view>
     <view class="chipLine">
       <block wx:for="{{p.chips}}" wx:for-item="ch" wx:key="id">
         <view class="chip mini {{ch.colorCls}} {{ch.dark?'dark':''}} {{ch.current?'takable':''}}"
@@ -88,6 +87,7 @@
       <button class="confirmBtn {{p.confirmed?'on':''}} {{p.canConfirm?'':'dis'}}"
         catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
     </view>
+    <text wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</text>
     <text wx:if="{{p.msg}}" class="msg">{{p.msg}}</text>
   </template>
 

@@ -127,8 +127,8 @@
   display: flex; align-items: center; justify-content: center;
 }
 .eye::after { border: none; }
-.holeRow { display: flex; gap: 5px; justify-content: center; min-height: 48px; }
-.chipLine { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; justify-content: center; min-height: 30px; }
+.holeRow { display: flex; gap: 5px; justify-content: center; align-items: center; height: 50px; }
+.chipLine { display: flex; gap: 5px; align-items: center; align-content: center; flex-wrap: wrap; justify-content: center; min-height: 30px; }
 .rl { font-size: 20rpx; color: #8fb8a3; }
 .returnBtn {
   background: rgba(214,69,65,.25); border: 2rpx solid #d64541; color: #ffb3ae;
@@ -271,7 +271,7 @@
 /* ---------- 座位框紧凑化 ---------- */
 .seatM { padding: 8rpx 12rpx; gap: 6rpx; }
 .seatM .pname { font-size: 24rpx; }
-.seatM .holeRow { min-height: 44px; gap: 4px; justify-content: center; }
+.seatM .holeRow { height: 48px; gap: 4px; justify-content: center; align-items: center; }
 .seatM .holeRow .eye { margin-left: 2px; }
 .pcard.tiny { width: 30px; height: 44px; }
 .pcard.tiny.faceUp { width: 32px; height: 46px; }
