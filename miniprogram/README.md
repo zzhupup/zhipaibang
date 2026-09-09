@@ -51,8 +51,9 @@
 // players：只能写自己的文档（心跳/退出删除）
 { "read": true, "write": "auth.openid == resource._openid" }
 
-// hands：底牌只有本人可读；房主（含转移后的新房主）可写
-{ "read": "auth.openid == resource.owner", "write": true }
+// hands：全放开。部分环境规则引擎不支持 resource.<自定义字段>（resource.owner 会报
+// rule invalid）；且本游戏底牌为"明牌"设计，无隐私收益，后续如需收紧改用云函数写
+{ "read": true, "write": true }
 
 // actions：操作馈送，任何用户可读写（房主需删除他人文档消费馈送）
 { "read": true, "write": true }
