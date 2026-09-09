@@ -93,10 +93,14 @@ Page({
   },
 
   async startGame() {
-    if (this.data.players.length < 3) {
+    const list = this.data.players;
+    if (list.length < 3) {
       this.setData({ error: '至少需要 3 位帮众才能开工' });
       return;
     }
+    // 关键：联机开局必须用在线玩家列表初始化引擎（此前缺失导致空状态：牌堆52不发牌/无筹码/崩溃）
+    const game = require('../../utils/game.js');
+    game.newGame({ mode: 'online', n: list.length, names: list.map(p => p.name) });
     await cloudRoom.updateRoom(this.roomId, { status: 'playing' });
   },
 
