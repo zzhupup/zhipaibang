@@ -660,14 +660,16 @@ async function heistEnd(success, failReason) {
 
   if (S.vaults >= 3 || S.alarms >= 3) {
     const win = S.vaults >= 3;
+    // 先广播整局结束（房主置 gameOver + 房间 status='over'）：
+    // 所有玩家（含客人）立刻同屏收到 再来一局【回房间页】/退出房间 结束栏
+    if (ui.onGameOver) ui.onGameOver();
     await ui.modal({
       title: win ? '🏆 游戏胜利！' : '🚨 游戏失败…',
       body: win
         ? `你们成功将 <b>3 张金库牌</b>翻至金色面！经过 ${S.heist} 次劫案，全员满载而归。<br><br>你们做到了完美的无言配合！`
         : `你们被迫将 <b>3 张警报牌</b>翻至红色面。警察包围了现场，这次帮派行动彻底失败…<br><br>再来一局，这次的教训是：时刻关注每一轮筹码的流转！`,
-      actions: [{ label: '重新开始', cls: 'warn' }]
+      actions: [{ label: '知道了' }]
     });
-    if (ui.onGameOver) ui.onGameOver();
     return 'GAME_OVER';
   }
 

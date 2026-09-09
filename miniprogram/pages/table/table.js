@@ -425,8 +425,11 @@ Page({
       if (!doc) return;                       // 房间被解散/删除：忽略（界面停在本地）
       if (doc.status === 'over') {
         if (!this.data.gameOver) {
+          // 按公开快照的金库/警报数区分胜负提示（3 金库=胜，3 警报=负）
+          const pub = doc.public || {};
+          const win = (pub.vaults || 0) >= 3;
           this.setData({ gameOver: true });
-          this.toast('整局游戏结束！');
+          this.toast(win ? '🏆 游戏胜利！' : '🚨 游戏失败…');
         }
       } else if (doc.status === 'lobby' && this.data.gameOver) {
         // 房主点了"再来一局"：全员自动回到房间准备页
