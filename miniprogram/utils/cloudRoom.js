@@ -36,7 +36,8 @@ async function createRoom(name) {
     } catch (e) { /* 不存在则继续 */ break; }
   }
   // 先建玩家文档拿到 playerId；房间文档记录 hostPid（房主离开时据此转交）
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
+  // lastSeen = 在线心跳标记（历史残留文档无此字段，会被列表过滤）
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now(), lastSeen: Date.now() } });
   await db.collection('rooms').doc(code).set({
     data: {
       status: 'lobby',
@@ -55,14 +56,31 @@ async function joinRoom(code, name) {
   const doc = await db.collection('rooms').doc(code).get();
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now() } });
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: Date.now() } });
   return { roomId: code, playerId: p._id };
 }
 
-/* ---------- 玩家列表（按加入时间排序 → 座位号） ---------- */
+/* ---------- 玩家列表（按加入时间排序 → 座位号；只保留 20 秒内有心跳的在线玩家） ---------- */
+const ONLINE_MS = 20000;
+function onlineFilter(d) {
+  return d.lastSeen && Date.now() - d.lastSeen <= ONLINE_MS;
+}
 async function listPlayers(roomId) {
-  const res = await db.collection('players').where({ roomId }).orderBy('created', 'asc').limit(20).get();
-  return res.data.map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
+  const res = await db.collection('players').where({ roomId }).orderBy('created', 'asc').limit(50).get();
+  return res.data.filter(onlineFilter)
+    .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: d.lastSeen }));
+}
+
+/* ---------- 在线心跳：每 5 秒刷新自己的 lastSeen ----------
+   列表只显示 20 秒内有心跳的玩家：退出即删文档，被杀进程 15 秒后自动掉列表，
+   历史残留文档（无 lastSeen）永久不可见。返回句柄，页面卸载时 stop()。 */
+function startHeartbeat(roomId, playerId) {
+  if (!roomId || !playerId || !db) return { stop() {} };
+  const tick = () => db.collection('players').doc(playerId)
+    .update({ data: { lastSeen: Date.now() } }).catch(() => {});
+  tick();
+  const timer = setInterval(tick, 5000);
+  return { stop() { clearInterval(timer); } };
 }
 
 /* ---------- 离开房间 ----------
@@ -126,13 +144,14 @@ function watchRoom(roomId, cb, onError) {
     cb, onError, 20
   );
 }
-/* ---------- 玩家列表监听（大厅） ---------- */
+/* ---------- 玩家列表监听（大厅，只推 20 秒内有心跳的在线玩家） ---------- */
 function watchPlayers(roomId, cb, onError) {
   return watchWithRetry(
     (ok, fail) => db.collection('players').where({ roomId }).watch({
       onChange: snap => {
-        const list = (snap.docs || []).sort((a, b) => a.created - b.created)
-          .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
+        const list = (snap.docs || []).filter(onlineFilter)
+          .sort((a, b) => a.created - b.created)
+          .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: d.lastSeen }));
         ok(list);
       },
       onError: fail,
@@ -209,7 +228,7 @@ async function removeAction(actionId) {
 }
 
 module.exports = {
-  ENV_ID, init, createRoom, joinRoom, listPlayers, leaveRoom,
+  ENV_ID, init, createRoom, joinRoom, listPlayers, leaveRoom, startHeartbeat,
   watchRoom, watchPlayers, watchHand, watchActions,
   updateRoomPublic, updateRoom, writeHands,
   setHandPrompt, clearHandPrompt, sendAction, removeAction,

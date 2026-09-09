@@ -72,6 +72,7 @@ Page({
       game.begin();
     } else if (this.mode === 'host') {
       cloudRoom.init();
+      this._hb = cloudRoom.startHeartbeat(this.roomId, this.myPlayerId);   // 在线心跳
       cloudRoom.listPlayers(this.roomId).then(list => {
         this.seatOpenids = list.map(p => p.openid);
         const { ui } = createHostUI({
@@ -84,6 +85,7 @@ Page({
     } else {
       // 客人：只渲染 + 发送操作
       cloudRoom.init();
+      this._hb = cloudRoom.startHeartbeat(this.roomId, this.myPlayerId);   // 在线心跳
       this.shownPromptPid = 0;
       this.watchAsGuestWithSeat();
     }
@@ -495,6 +497,7 @@ Page({
   },
 
   onUnload() {
+    if (this._hb) this._hb.stop();
     if (this._feedWatcher) this._feedWatcher.close();
     if (this._roomWatcher) this._roomWatcher.close();
     if (this._handWatcher) this._handWatcher.close();

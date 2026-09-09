@@ -23,6 +23,7 @@ Page({
   onUnload() {
     if (this.watcher) this.watcher.close();
     if (this.roomWatcher) this.roomWatcher.close();
+    if (this._hb) this._hb.stop();
     // 页面卸载（含手势返回）= 离开房间；进牌桌的重定向除外
     if (!this._enteringTable && this.roomId && this.myPlayerId) {
       cloudRoom.leaveRoom(this.roomId, this.myPlayerId).catch(() => {});
@@ -44,6 +45,7 @@ Page({
       const { roomId, playerId } = await cloudRoom.createRoom(this.name);
       this.roomId = roomId;
       this.myPlayerId = playerId;   // 身份标识 = 玩家文档 _id（add 不返回 openid，真机已验证）
+      this._hb = cloudRoom.startHeartbeat(roomId, playerId);   // 在线心跳
       this.setData({ roomId, isHost: true, mySeat: 0, loading: false });
       this.startWatch();
     } catch (e) {
@@ -57,7 +59,9 @@ Page({
     this.setData({ loading: true, error: '' });
     try {
       const { roomId, playerId } = await cloudRoom.joinRoom(code, this.name);
+      this.roomId = roomId;
       this.myPlayerId = playerId;
+      this._hb = cloudRoom.startHeartbeat(roomId, playerId);   // 在线心跳
       this.setData({ roomId, isHost: false, loading: false });
       this.startWatch();
     } catch (e) {
