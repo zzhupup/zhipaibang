@@ -237,7 +237,9 @@ Page({
       const s = game.state;
       const color = game.ROUND_COLOR[s.round];
       if (s.phase !== 'chips' || !s.centerChips.has(star)) return;
-      if (s.players[this.mySeat].chips[color]) return;
+      const me = s.players[this.mySeat];
+      if (!me) return;                       // 座位无效（状态未初始化等），忽略点击
+      if (me.chips[color]) return;
       game.doTakeCenter(this.mySeat, star);
       return;
     }
