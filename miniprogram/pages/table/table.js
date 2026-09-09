@@ -33,6 +33,7 @@ Page({
     seats: [],
     mode: 'standard', n: 3,
     mySeat: 0,
+    chatText: '',       // 游戏内发言输入框
     // 弹层
     modal: null,        // 单机/房主：引擎驱动（promise）；客人：本地查看底牌
     pick: null,         // 私密选牌（单机/房主本机）
@@ -326,6 +327,23 @@ Page({
     if (this.mode === 'host') { if (i === this.mySeat) game.confirmPlayer(this.mySeat); return; }
     game.confirmPlayer(i);
   },
+
+  /* ---- 游戏内发言：文字显示在自己座位框内 ---- */
+  onChatInput(e) {
+    this.setData({ chatText: e.detail.value });
+  },
+  onChatSend() {
+    const text = String(this.data.chatText || '').trim();
+    if (!text) return;
+    this.setData({ chatText: '' });
+    if (this.mode === 'guest') {
+      // 客人：投递给房主，由房主写入引擎后随快照广播全员
+      cloudRoom.sendAction(this.roomId, { type: 'chat', seat: this.mySeat, text: String(text).slice(0, 60) });
+      return;
+    }
+    // 单机 / 房主本机：直接写入引擎（房主写完自动随快照广播）
+    game.say(this.mySeat, text);
+  },
   onPeek(e) {
     const i = +e.currentTarget.dataset.i;
     if (this.mode === 'single' || (this.mode === 'host' && i === this.mySeat)) {
@@ -415,6 +433,8 @@ Page({
           if (s.phase === 'chips' && p.chips[color] && !p.chips[color].dark) game.returnChip(a.seat);
         } else if (a.type === 'confirm') {
           if (s.phase === 'chips' && s.players[a.seat].chips[color]) game.confirmPlayer(a.seat);
+        } else if (a.type === 'chat') {
+          game.say(a.seat, a.text);
         }
         await cloudRoom.removeAction(a._id);
       } catch (e) {

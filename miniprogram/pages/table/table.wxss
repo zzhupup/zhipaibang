@@ -30,7 +30,7 @@
 .pill.expert { background: rgba(240,160,232,.12); border-color: rgba(240,160,232,.5); color: #f0a0e8; }
 
 /* ---------- 圆桌舞台 ---------- */
-.stageWrap { margin: 0 auto; overflow: hidden; }
+.stageWrap { margin: 0 auto 150rpx; overflow: hidden; }
 .stage { position: relative; transform-origin: 0 0; }
 .roundTable {
   position: absolute; left: 50%; top: 50%; width: 640px; height: 430px;
@@ -217,7 +217,7 @@
 }
 .seatM.me { border-color: #7dd8a8; box-shadow: 0 0 12rpx rgba(125,216,168,.4); }
 .seatM .confirmBtn { align-self: center; margin-top: 4rpx; }
-.stackFoot { height: 40rpx; }
+.stackFoot { height: 160rpx; }
 
 /* ---------- 弹窗 ---------- */
 .mroot {
@@ -341,6 +341,34 @@
 .seatM .msg { font-size: 20rpx; }
 
 .r1hint { color: rgba(255,233,176,.8); font-size: 20rpx; margin-top: 8rpx; letter-spacing: 1rpx; }
+
+/* ---------- 游戏内发言栏 ---------- */
+.chatBar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+  display: flex; align-items: center; gap: 16rpx;
+  background: rgba(6,22,16,.94);
+  border-top: 2rpx solid rgba(46,122,88,.7);
+  padding: 14rpx 24rpx calc(14rpx + env(safe-area-inset-bottom));
+}
+.chatBar.hide { display: none; }
+.chatInput {
+  flex: 1; height: 68rpx; line-height: 68rpx; min-height: 68rpx;
+  background: rgba(255,255,255,.08); border: 2rpx solid #2e7a58; border-radius: 34rpx;
+  color: #e8f5ee; font-size: 26rpx; padding: 0 28rpx; box-sizing: border-box;
+}
+.chatSend {
+  flex: none; margin: 0; width: 132rpx; height: 68rpx; line-height: 68rpx;
+  font-size: 26rpx; padding: 0; border-radius: 34rpx;
+  background: #3d9b6d; color: #fff; border: 2rpx solid #57c48f;
+}
+/* 座位内发言气泡：比系统提示更醒目 */
+.msg { font-size: 20rpx; color: #a9cbbb; }
+.msg.chat {
+  display: block; margin-top: 6rpx; padding: 8rpx 16rpx;
+  background: rgba(232,193,90,.12); border: 2rpx dashed rgba(232,193,90,.5);
+  border-radius: 10rpx; color: #ffe9b0; font-size: 22rpx; line-height: 1.5;
+  word-break: break-all;
+}
 
 /* ---------- 整局结束操作栏 ---------- */
 .overBar {

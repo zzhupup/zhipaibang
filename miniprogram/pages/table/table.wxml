@@ -149,7 +149,7 @@
         catchtap="onConfirm" data-i="{{p.i}}">{{p.confirmLabel}}</button>
     </view>
     <text wx:if="{{p.myInfo}}" class="msg myInfo">{{p.myInfo}}</text>
-    <text wx:if="{{p.msg}}" class="msg">{{p.msg}}</text>
+    <text wx:if="{{p.msg}}" class="msg chat">{{p.msg}}</text>
   </template>
 
   <!-- ============ 宽屏：圆桌舞台 ============ -->
@@ -322,6 +322,13 @@
       <button class="mbtn" catchtap="closePeek">看完了，隐藏</button>
     </view>
   </view>
+</view>
+
+<!-- 游戏内发言：文字显示在自己座位框内 -->
+<view class="chatBar {{gameOver ? 'hide' : ''}}">
+  <input class="chatInput" value="{{chatText}}" placeholder="说点什么，显示在你的座位框内"
+    confirm-type="send" maxlength="60" bindinput="onChatInput" bindconfirm="onChatSend" />
+  <button class="chatSend" bindtap="onChatSend">发送</button>
 </view>
 
 <!-- 整局结束：再来一局 / 退出房间（联机） -->

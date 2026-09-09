@@ -742,10 +742,20 @@ function getSnapshot() {
   };
 }
 
+/* 游戏内发言：文字显示在自己座位框内（联机经房主应用后随快照广播全员） */
+function say(seat, text) {
+  const p = S.players[seat];
+  if (!p) return;
+  const t = String(text || '').trim().slice(0, 60);
+  if (!t) return;
+  p.msg = t;
+  ui.render();
+}
+
 module.exports = {
   setUI, newGame, begin, getSnapshot, resolveBoard,
   takeCenter, takeFromPlayer, returnChip, confirmPlayer,
-  doTakeCenter, doTakeFrom,
+  doTakeCenter, doTakeFrom, say,
   peekPlayer, showRules, showLog, showRoundInfo,
   ROUND_COLOR, ROUND_NAME, COLOR_TXT, CHALLENGES, EXPERTS,
   get state() { return S; },
