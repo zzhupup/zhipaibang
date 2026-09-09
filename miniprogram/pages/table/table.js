@@ -105,6 +105,7 @@ Page({
      渲染（三种模式共用）：输入为 getSnapshot() 形状的快照
      ================================================================ */
   sync(s) {
+    if (!s || !s.players || !s.players.length) return;   // 空/未初始化快照直接忽略（public 初始为 {} 时）
     const n = s.players.length;
     const color = s.roundColor;
     const isOnline = this.mode !== 'single';
@@ -364,7 +365,7 @@ Page({
     // 房间公开快照
     this._roomWatcher = cloudRoom.watchRoom(this.roomId, doc => {
       if (doc.status === 'over') { this.toast('对局已结束'); }
-      if (doc.public) {
+      if (doc.public && doc.public.players) {
         this._lastSnap = doc.public;
         this.sync(doc.public);
         this.applyGuestViews(doc.public);
