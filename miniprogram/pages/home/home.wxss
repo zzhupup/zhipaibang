@@ -71,10 +71,10 @@
 .phc { color: #5f8a76; }
 
 /* ---- 昵称行：标题与输入框同行（标题压缩到最窄，输入框占满剩余宽度） ---- */
-.nickRow { display: flex; align-items: center; gap: 14rpx; margin-top: 38rpx; }
+.nickRow { display: flex; align-items: center; gap: 14rpx; margin: 46rpx 0 44rpx; }
 .nickTitle { margin: 0; flex: none; font-size: 26rpx; }
 .nickTitle::before { width: 6rpx; height: 24rpx; }
-.nickInput { flex: 1; width: auto; min-width: 0; padding: 20rpx 24rpx; font-size: 30rpx; }
+.nickInput { flex: 1; width: auto; min-width: 0; padding: 34rpx 26rpx; font-size: 32rpx; height: auto; }
 .nameInput { padding: 16rpx 18rpx; font-size: 26rpx; width: calc((100% - 24rpx) / 3); text-align: center; }
 .nameRow { display: flex; flex-wrap: wrap; gap: 12rpx; }
 
