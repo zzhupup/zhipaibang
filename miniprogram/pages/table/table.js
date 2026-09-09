@@ -333,6 +333,11 @@ Page({
       try {
         const s = game.state;
         const color = game.ROUND_COLOR[s.round];
+        if (a.seat !== undefined && !s.players[a.seat]) {
+          console.warn('[feed] 无效座位，忽略操作:', JSON.stringify(a), '当前玩家数', s.players.length);
+          await cloudRoom.removeAction(a._id);
+          return;
+        }
         if (a.type === 'prompt' || a.type === 'pick') {
           if (this.hostFeed) this.hostFeed(a);
         } else if (a.type === 'takeCenter') {
