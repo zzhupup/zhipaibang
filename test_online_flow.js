@@ -43,7 +43,7 @@ const page = {
     for (let k = 0; k < hole.length; k++) if (hole[k] !== exclude) return Promise.resolve(k);
     return Promise.resolve(0);
   },
-  syncFromSnapshot(snap) { page.lastSnap = snap; },
+  sync(snap) { page.lastSnap = snap; },
 };
 
 let pass = 0, fail = 0;
@@ -88,6 +88,17 @@ const T = (n, c) => c ? (pass++, console.log('OK  ', n)) : (fail++, console.log(
       continue;
     }
 
+    // 定向弹窗（私密操作/摊牌亮牌）：目标玩家自动应答（与修复后的客户端一致，回复带 pid）
+    if (snap.prompt && typeof snap.prompt.target === 'number' && snap.prompt.actions) {
+      const pid = snap.prompt.pid;
+      if (page._lastAutoPid !== pid) {
+        page._lastAutoPid = pid;
+        const act = snap.prompt.actions[0];
+        await cloudRoom.sendAction('888888', { type: 'prompt', pid, value: act ? act.value : 1, seat: snap.prompt.target });
+      }
+      continue;
+    }
+
     if (snap.phase === 'chips') {
       const color = snap.roundColor;
       // 每位玩家拿筹码（模拟牌型预期：0星→座位0拿1星…简化：座位i拿 i+1 星）
@@ -116,7 +127,10 @@ const T = (n, c) => c ? (pass++, console.log('OK  ', n)) : (fail++, console.log(
 
   const snap = store.rooms['888888'].public;
   T('联机模式走完一次劫案并结算', snap && (snap.vaults === 1 || snap.alarms === 1));
-  T('公开快照不含任何底牌牌面', !JSON.stringify(store.rooms['888888'].public).includes('"s"'));
+  // 公共牌是明牌（communityRaw 允许），其余部分不得含任何原始牌面（s 字段）
+  const pubCopy = JSON.parse(JSON.stringify(store.rooms['888888'].public));
+  const rawComm = pubCopy.communityRaw; delete pubCopy.communityRaw;
+  T('公开快照不含任何底牌牌面', !JSON.stringify(pubCopy).includes('"s"') && (!rawComm || rawComm.length === snap.community.length));
   const hands = Object.entries(store.hands);
   T('私密文档只含本人底牌（每人 2 张）', hands.length === 3 && hands.every(([, h]) => h.hole && h.hole.length === 2));
   T('全员确认机制生效（快照含确认计数）', typeof snap.confirmedCount === 'number');

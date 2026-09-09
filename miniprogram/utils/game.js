@@ -623,14 +623,15 @@ async function showdown() {
         cmpHtml = `<div style="margin-top:12rpx"><span style="font-size:26rpx;padding:6rpx 20rpx;border-radius:10rpx;background:rgba(61,155,109,.3);color:#8fe6b4;border:2rpx solid #57c48f;font-weight:bold">✔ 不弱于上一位（${handName(prev.score)}）</span></div>`;
       } else {
         await ui.modal({
-          title: '💥 摊牌错误！',
-          body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`,
-          reveal: {
-            holeFaces: facesWithHl(p.hole, b.cards),
-            communityFaces: facesWithHl(S.community, b.cards),
-          },
-          actions: [{ label: '唉…接受失败' }]
-        });
+        title: '💥 摊牌错误！',
+        body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`,
+        reveal: {
+          holeFaces: facesWithHl(p.hole, b.cards),
+          communityFaces: facesWithHl(S.community, b.cards),
+        },
+        player: i,   // 联机：完整牌面只发给本人，其他人只看到牌型名
+        actions: [{ label: '唉…接受失败' }]
+      });
         log(`${p.name} 的牌型 ${handName(b.score)} 弱于上一位的 ${handName(prev.score)}，劫案失败！`, true);
         return heistEnd(false, `<b>${p.name}</b> 展示的牌型「${handName(b.score)}」弱于上一位的「${handName(prev.score)}」。你们没有正确安排分工，一张警报牌翻至红色面！`);
       }
@@ -644,6 +645,7 @@ async function showdown() {
         holeFaces: facesWithHl(p.hole, b.cards),
         communityFaces: facesWithHl(S.community, b.cards),
       },
+      player: i,     // 联机：底牌牌面只发本人，其他人只看到公开的牌型名
       actions: [{ label: '下一位' }]
     });
     log(`${p.name} 展示：${handName(b.score)}${prev ? `（对比 ${handName(prev.score)}：${cmpReveal(prev, b) >= 0 ? '通过' : '失败'}）` : ''}`);
@@ -703,6 +705,7 @@ function getSnapshot() {
     round: S.round,
     phase: S.phase,
     community: S.community.map(poker.cardFace),
+    communityRaw: S.community,   // 原始 {r,s} 牌：客户端本地算"当前牌型"用（cardFace 视图无 r/s 字段）
     deckCount: S.deck.length,
     discardCount: S.discard.length,
     centerChips: [...S.centerChips].sort((a, b) => a - b),

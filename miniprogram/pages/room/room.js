@@ -15,8 +15,19 @@ Page({
 
   onLoad(options) {
     cloudRoom.init();
+    // 「再来一局」从牌桌回来：复用原房间与玩家身份，直接进入准备页
+    if (options.resume && options.roomId && options.pid) {
+      this.roomId = options.roomId;
+      this.myPlayerId = options.pid;
+      this.name = '';
+      this.setData({ roomId: this.roomId, action: 'create', loading: false, status: 'lobby' });
+      this._hb = cloudRoom.startHeartbeat(this.roomId, this.myPlayerId);
+      this.startWatch();
+      return;
+    }
     this.setData({ action: options.action || 'create' });
-    this.name = options.name || '玩家';
+    // home 页跳转时 encodeURIComponent 过，必须解码（否则中文昵称存库成 %E7%8E%A9... 乱码）
+    this.name = options.name ? decodeURIComponent(options.name) : '玩家';
     if (this.data.action === 'create') this.doCreate();
   },
 

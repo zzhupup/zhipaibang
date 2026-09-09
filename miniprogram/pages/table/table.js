@@ -40,6 +40,7 @@ Page({
     guestPick: null,    // 客人：私密选牌
     waitModal: null,    // 客人：他人私密操作提示
     peekModal: null,    // 客人：查看自己的底牌
+    gameOver: false,    // 联机：整局游戏结束（显示 再来一局/退出房间）
   },
 
   onLoad(options) {
@@ -153,14 +154,15 @@ Page({
       });
       // 联机模式：自己的底牌明牌常显
       let myHole = null, myInfo = '';
+      const commRaw = s.communityRaw || [];   // 原始 {r,s} 牌（community 是 cardFace 视图，无 r/s，喂给 best5 会全判成"四条"）
       if (isOnline && i === this.mySeat) {
         let hole = null;
         if (this.mode === 'host') hole = game.state.players[i].hole;
         else if (this._myHand && this._myHand.hole) hole = this._myHand.hole;
         if (hole && hole.length) {
           myHole = hole.map(c => poker.cardFace(c));
-          myInfo = s.community.length >= 3
-            ? '当前牌型：' + poker.handName(poker.best5([...hole, ...s.community], p.striker).score)
+          myInfo = commRaw.length >= 3
+            ? '当前牌型：' + poker.handName(poker.best5([...hole, ...commRaw], p.striker).score)
             : '组合：' + poker.partialHandName(hole);
         }
       }
@@ -323,11 +325,12 @@ Page({
   showGuestPeek() {
     const hand = this._myHand;
     if (!hand || !hand.hole || !hand.hole.length) { this.toast('底牌尚未发放'); return; }
-    const s = this._lastSnap || { community: [] };
+    const s = this._lastSnap || { community: [], communityRaw: [] };
     const cards = hand.hole.map(c => poker.cardSpan(c)).join('');
+    const commRaw = s.communityRaw || [];
     let info;
-    if (s.community.length >= 3) {
-      const b = poker.best5([...hand.hole, ...s.community], false);
+    if (commRaw.length >= 3) {
+      const b = poker.best5([...hand.hole, ...commRaw], false);
       info = `你当前的牌型：<b style="color:#e8c15a">${poker.handName(b.score)}</b>（仅供参考，禁止告诉别人）`;
     } else {
       info = `你目前的底牌组合：<b style="color:#e8c15a">${poker.partialHandName(hand.hole)}</b>（仅供参考，禁止告诉别人）`;
@@ -412,7 +415,19 @@ Page({
     // 房间公开快照
     this._roomWatcher = cloudRoom.watchRoom(this.roomId, doc => {
       if (!doc) return;                       // 房间被解散/删除：忽略（界面停在本地）
-      if (doc.status === 'over') { this.toast('对局已结束'); }
+      if (doc.status === 'over') {
+        if (!this.data.gameOver) {
+          this.setData({ gameOver: true });
+          this.toast('整局游戏结束！');
+        }
+      } else if (doc.status === 'lobby' && this.data.gameOver) {
+        // 房主点了"再来一局"：全员自动回到房间准备页
+        this._leavingToRoom = true;
+        wx.redirectTo({
+          url: `/pages/room/room?resume=1&roomId=${this.roomId}&pid=${this.myPlayerId || ''}`,
+        });
+        return;
+      }
       if (doc.public && doc.public.players) {
         this._lastSnap = doc.public;
         this.sync(doc.public);
@@ -440,7 +455,7 @@ Page({
     if (!snap) return;
     const pr = snap.prompt;
     const hp = this._myHand && this._myHand.prompt;
-    // 公开提示（全员）或等待他人私密操作
+    // 公开提示（全员）
     if (pr && pr.target === 'all') {
       if (this._guestPid !== pr.pid) {
         this._guestPid = pr.pid;
@@ -449,34 +464,57 @@ Page({
           guestPick: null, waitModal: null,
         });
       }
-    } else if (pr && typeof pr.target === 'number' && pr.target !== this.mySeat) {
-      if (this._guestPid !== pr.pid) {
-        this._guestPid = pr.pid;
-        this.setData({
-          guestModal: null, guestPick: null,
-          waitModal: { title: '⏳ 请稍候', body: `<div style="text-align:center;padding:20rpx;font-size:28rpx">${pr.waitName || '一位帮众'} 正在进行私密操作…</div>` },
-        });
+    }
+    // 定向提示：正文走公开通道（含回复 pid；与热座一致所有人可见，牌面只有本人有）
+    else if (pr && typeof pr.target === 'number') {
+      if (pr.target === this.mySeat && pr.title) {
+        if (this._guestPid !== pr.pid) {
+          this._guestPid = pr.pid;      // 关键：回复动作必须带这个 pid，房主才能匹配
+          this.setData({
+            guestModal: { title: pr.title, body: pr.body, actions: (pr.actions || [{ label: '确定' }]).map((a, i) => ({ label: a.label, cls: a.cls || '', idx: i, value: a.value })) },
+            guestPick: null, waitModal: null,
+          });
+        }
+      } else if (pr.target !== this.mySeat) {
+        if (this._guestPid !== pr.pid) {
+          this._guestPid = pr.pid;
+          if (pr.title && pr.body) {
+            // 有正文（如摊牌详情的公开部分）：照常展示，按钮点击会被房主忽略
+            this.setData({
+              guestModal: { title: pr.title, body: pr.body, actions: (pr.actions || [{ label: '确定' }]).map((a, i) => ({ label: a.label, cls: a.cls || '', idx: i, value: a.value })) },
+              guestPick: null, waitModal: null,
+            });
+          } else {
+            this.setData({
+              guestModal: null, guestPick: null,
+              waitModal: { title: '⏳ 请稍候', body: `<div style="text-align:center;padding:20rpx;font-size:28rpx">${pr.waitName || '一位帮众'} 正在进行私密操作…</div>` },
+            });
+          }
+        }
       }
-    } else if (!pr) {
+    }
+    // 提示清除
+    else if (!pr) {
       if (this._guestPid !== 0) {
         this._guestPid = 0;
         this.setData({ guestModal: null, guestPick: null, waitModal: null });
       }
     }
-    // 私密提示（发给我的弹窗 / 私密选牌）
+    // 私密通道：发给本人的牌面（选牌 / 弹窗附带的 cards/reveal），比公开通道多牌面时升级显示
     if (hp && hp.pid) {
       if (this._handPid !== hp.pid) {
         this._handPid = hp.pid;
+        this._guestPid = hp.pid;
         if (hp.pickHole) {
           this.setData({ guestModal: null, guestPick: { pid: hp.pid, prompt: hp.prompt, cards: hp.cards } });
         } else {
           this.setData({
-            guestModal: { title: hp.title, body: hp.body, actions: (hp.actions || [{ label: '确定' }]).map((a, i) => ({ label: a.label, cls: a.cls || '', idx: i, value: a.value })) },
+            guestModal: { title: hp.title, body: hp.body, cards: hp.cards || null, reveal: hp.reveal || null, actions: (hp.actions || [{ label: '确定' }]).map((a, i) => ({ label: a.label, cls: a.cls || '', idx: i, value: a.value })) },
             guestPick: null, waitModal: null,
           });
         }
       }
-    } else if (this._handPid !== 0 && !hp) {
+    } else if (this._handPid !== 0 && !(hp && hp.pid)) {
       this._handPid = 0;
       this.setData({ guestPick: null });
     }
@@ -496,6 +534,31 @@ Page({
     if (!gp) return;
     cloudRoom.sendAction(this.roomId, { type: 'pick', pid: gp.pid, idx, seat: this.mySeat });
     this.setData({ guestPick: null });
+  },
+
+  /* ============ 整局结束：再来一局 / 退出房间 ============ */
+  onPlayAgain() {
+    // 房主把房间重置回准备状态；所有人回到房间页（resume 模式复用原房间与身份）
+    if (this.mode === 'host') {
+      cloudRoom.updateRoom(this.roomId, { status: 'lobby', public: {} }).catch(() => {});
+    }
+    this._leavingToRoom = true;
+    wx.redirectTo({
+      url: `/pages/room/room?resume=1&roomId=${this.roomId}&pid=${this.myPlayerId || ''}`,
+    });
+  },
+  onExitRoom() {
+    wx.showModal({
+      title: '退出房间',
+      content: '确定离开吗？退出后需要重新输入房间号才能再次加入。',
+      confirmColor: '#c0524d',
+      success: res => {
+        if (!res.confirm) return;
+        if (this.myPlayerId) cloudRoom.leaveRoom(this.roomId, this.myPlayerId).catch(() => {});
+        this._leavingToRoom = true;
+        wx.reLaunch({ url: '/pages/home/home' });
+      },
+    });
   },
 
   onUnload() {

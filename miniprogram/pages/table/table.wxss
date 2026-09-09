@@ -285,3 +285,26 @@
 .seatM .msg { font-size: 20rpx; }
 
 .r1hint { color: rgba(255,233,176,.8); font-size: 20rpx; margin-top: 8rpx; letter-spacing: 1rpx; }
+
+/* ---------- 整局结束操作栏 ---------- */
+.overBar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 999;
+  display: none;
+  background: rgba(6,22,16,.96);
+  border-top: 2rpx solid #2e7a58;
+  box-shadow: 0 -8px 24px rgba(0,0,0,.5);
+  padding: 20rpx 30rpx calc(20rpx + env(safe-area-inset-bottom));
+}
+.overBar.show { display: block; }
+.overTitle { text-align: center; color: #ffe9b0; font-size: 30rpx; font-weight: bold; margin-bottom: 16rpx; }
+.overBtns { display: flex; gap: 20rpx; }
+.overBtn {
+  flex: 1; margin: 0; font-size: 28rpx; line-height: 2.2; border-radius: 14rpx;
+}
+.overBtn.primary {
+  background: #3d9b6d; color: #fff; border: 2rpx solid #57c48f;
+}
+.overBtn.ghost {
+  background: rgba(214,69,65,.18); color: #ffb3ae; border: 2rpx solid #d64541;
+}
+.overBtn::after { border: none; }

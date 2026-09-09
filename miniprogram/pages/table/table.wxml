@@ -156,7 +156,20 @@
 <view class="mroot {{guestModal?'show':''}}">
   <view class="mbox" wx:if="{{guestModal}}" catchtap="noop">
     <view class="mtitle">{{guestModal.title}}</view>
-    <scroll-view scroll-y class="mbodyS">
+    <view wx:if="{{guestModal.cards}}" class="mcards">
+      <template wx:for="{{guestModal.cards}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+    </view>
+    <view wx:if="{{guestModal.reveal}}" class="mreveal">
+      <view class="rlbl">底牌：</view>
+      <view class="mcards">
+        <template wx:for="{{guestModal.reveal.holeFaces}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+      </view>
+      <view class="rlbl">公共牌：</view>
+      <view class="mcards">
+        <template wx:for="{{guestModal.reveal.communityFaces}}" wx:key="index" is="tCard" data="{{f:item}}"/>
+      </view>
+    </view>
+    <scroll-view scroll-y class="mbodyS {{guestModal.cards||guestModal.reveal?'':'full'}}">
       <rich-text nodes="{{guestModal.body}}"></rich-text>
     </scroll-view>
     <view class="macts">
@@ -203,6 +216,15 @@
     <view class="macts">
       <button class="mbtn" catchtap="closePeek">看完了，隐藏</button>
     </view>
+  </view>
+</view>
+
+<!-- 整局结束：再来一局 / 退出房间（联机） -->
+<view class="overBar {{gameOver && playMode!=='single' ? 'show' : ''}}">
+  <view class="overTitle">🎉 本局游戏结束</view>
+  <view class="overBtns">
+    <button class="overBtn primary" catchtap="onPlayAgain">🔄 再来一局</button>
+    <button class="overBtn ghost" catchtap="onExitRoom">🚪 退出房间</button>
   </view>
 </view>
 

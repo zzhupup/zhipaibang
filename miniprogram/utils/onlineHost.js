@@ -88,10 +88,15 @@ function createHostUI(opts) {
         return cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt))
           .then(() => new Promise(res => { pending = { pid, target: 'all', resolve: res, done: false }; }));
       }
-      // 指定某位玩家（私密弹窗）：正文写其 hands 文档；其他人只看到等待提示
-      publicPrompt = { pid, target, waitName: game.state.players[target].name };
+      // 指定某位玩家（私密弹窗）：正文走公开通道（所有人可见，与热座一致；
+      // 底牌牌面 cards/reveal 只走私密通道发给本人）。此前正文只写 hands 文档，
+      // 且目标玩家回复时 pid 取不到 → 房主永远等不到动作，表现为"弹窗不出现"
+      publicPrompt = { pid, target, waitName: game.state.players[target].name, title: o.title, body: o.body, actions: o.actions };
       const my = Promise.all([
-        cloudRoom.setHandPrompt(roomId, target, { pid, title: o.title, body: o.body, actions: o.actions }),
+        cloudRoom.setHandPrompt(roomId, target, {
+          pid, title: o.title, body: o.body, actions: o.actions,
+          cards: o.cards || null, reveal: o.reveal || null,
+        }),
         cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
       ]);
       return my.then(() => new Promise(res => { pending = { pid, target, resolve: res, done: false }; }));
@@ -119,6 +124,7 @@ function createHostUI(opts) {
     },
 
     onGameOver: () => {
+      if (page.setData) page.setData({ gameOver: true });
       cloudRoom.updateRoom(roomId, { status: 'over' });
     },
   };
