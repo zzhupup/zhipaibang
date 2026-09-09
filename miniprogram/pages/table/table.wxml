@@ -22,21 +22,27 @@
     </view>
   </view>
 
-  <!-- 模板：单张完整卡面（弹窗用，f.hl=金边高亮） -->
+  <!-- 模板：单张完整卡面（弹窗用，f.hl=金边高亮）经典样式：角标+中央点阵/花框 -->
   <template name="tCard">
     <view class="pcard small {{f.red?'red':''}} {{f.knight?'knight':''}} {{f.hl?'hl2':''}}">
-      <view class="corner"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
-      <view class="pip">{{f.suit}}</view>
-      <view class="corner br"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+      <view class="corner"><text class="rg">{{f.label}}</text><text class="st">{{f.suit}}</text></view>
+      <view wx:if="{{f.court}}" class="courtBox"><text class="cLtr">{{f.label}}</text><text class="cSuit">{{f.suit}}</text></view>
+      <view wx:else class="pipsArea {{f.ace?'ace':''}}">
+        <text wx:for="{{f.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{f.suit}}</text>
+      </view>
+      <view class="corner br"><text class="rg">{{f.label}}</text><text class="st">{{f.suit}}</text></view>
     </view>
   </template>
 
   <!-- 模板：超小牌（摊牌结果板用） -->
   <template name="tCardT">
     <view class="pcard tiny {{f.red?'red':''}} {{f.knight?'knight':''}} {{f.hl?'hl2':''}}">
-      <view class="corner"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
-      <view class="pip">{{f.suit}}</view>
-      <view class="corner br"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+      <view class="corner"><text class="rg">{{f.label}}</text><text class="st">{{f.suit}}</text></view>
+      <view wx:if="{{f.court}}" class="courtBox"><text class="cLtr">{{f.label}}</text><text class="cSuit">{{f.suit}}</text></view>
+      <view wx:else class="pipsArea {{f.ace?'ace':''}}">
+        <text wx:for="{{f.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{f.suit}}</text>
+      </view>
+      <view class="corner br"><text class="rg">{{f.label}}</text><text class="st">{{f.suit}}</text></view>
     </view>
   </template>
 
@@ -45,9 +51,12 @@
     <view class="communityRow">
       <block wx:for="{{communityViews}}" wx:key="index">
         <view wx:if="{{item.face}}" class="pcard small {{item.face.red?'red':''}} {{item.face.knight?'knight':''}}">
-          <view class="corner"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
-          <view class="pip">{{item.face.suit}}</view>
-          <view class="corner br"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+          <view class="corner"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
+          <view wx:if="{{item.face.court}}" class="courtBox"><text class="cLtr">{{item.face.label}}</text><text class="cSuit">{{item.face.suit}}</text></view>
+          <view wx:else class="pipsArea {{item.face.ace?'ace':''}}">
+            <text wx:for="{{item.face.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{item.face.suit}}</text>
+          </view>
+          <view class="corner br"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
         </view>
         <view wx:else class="slot"><text>公共牌</text></view>
       </block>
@@ -72,9 +81,12 @@
     <view class="holeRow">
       <block wx:if="{{p.myHole}}">
         <view wx:for="{{p.myHole}}" wx:for-item="hc" wx:key="index" class="pcard tiny {{hc.red?'red':''}} {{hc.knight?'knight':''}} faceUp">
-          <view class="corner"><text>{{hc.label}}</text><text>{{hc.suit}}</text></view>
-          <view class="pip">{{hc.suit}}</view>
-          <view class="corner br"><text>{{hc.label}}</text><text>{{hc.suit}}</text></view>
+          <view class="corner"><text class="rg">{{hc.label}}</text><text class="st">{{hc.suit}}</text></view>
+          <view wx:if="{{hc.court}}" class="courtBox"><text class="cLtr">{{hc.label}}</text><text class="cSuit">{{hc.suit}}</text></view>
+          <view wx:else class="pipsArea {{hc.ace?'ace':''}}">
+            <text wx:for="{{hc.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{hc.suit}}</text>
+          </view>
+          <view class="corner br"><text class="rg">{{hc.label}}</text><text class="st">{{hc.suit}}</text></view>
         </view>
       </block>
       <block wx:else>
@@ -238,9 +250,12 @@
     <view class="pickRow">
       <view wx:for="{{guestPick.cards}}" wx:key="idx" class="pcard {{item.face.red?'red':''}} {{item.face.knight?'knight':''}} pickCard"
         catchtap="onGuestPick" data-idx="{{item.idx}}">
-        <view class="corner"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
-        <view class="pip">{{item.face.suit}}</view>
-        <view class="corner br"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+        <view class="corner"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
+        <view wx:if="{{item.face.court}}" class="courtBox"><text class="cLtr">{{item.face.label}}</text><text class="cSuit">{{item.face.suit}}</text></view>
+        <view wx:else class="pipsArea {{item.face.ace?'ace':''}}">
+          <text wx:for="{{item.face.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{item.face.suit}}</text>
+        </view>
+        <view class="corner br"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
       </view>
     </view>
   </view>
@@ -277,9 +292,12 @@
     <view class="pickRow">
       <view wx:for="{{pick.cards}}" wx:key="idx" class="pcard {{item.face.red?'red':''}} {{item.face.knight?'knight':''}} pickCard"
         catchtap="onPickCard" data-idx="{{item.idx}}">
-        <view class="corner"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
-        <view class="pip">{{item.face.suit}}</view>
-        <view class="corner br"><text>{{item.face.label}}</text><text>{{item.face.suit}}</text></view>
+        <view class="corner"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
+        <view wx:if="{{item.face.court}}" class="courtBox"><text class="cLtr">{{item.face.label}}</text><text class="cSuit">{{item.face.suit}}</text></view>
+        <view wx:else class="pipsArea {{item.face.ace?'ace':''}}">
+          <text wx:for="{{item.face.pips}}" wx:for-item="pp" wx:key="index" class="pipI {{pp.f?'fl':''}}" style="left:{{pp.x}}%;top:{{pp.y}}%">{{item.face.suit}}</text>
+        </view>
+        <view class="corner br"><text class="rg">{{item.face.label}}</text><text class="st">{{item.face.suit}}</text></view>
       </view>
     </view>
   </view>

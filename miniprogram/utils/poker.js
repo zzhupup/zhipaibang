@@ -22,10 +22,27 @@ function cardText(c) {
   if (c.s === 4) return '王牌J（无花色）';
   return RANK_TXT[c.r] + SUITS[c.s];
 }
-/* WXML 牌面视图模型 */
+/* WXML 牌面视图模型（经典扑克样式）
+   pips = 中央花色点阵坐标（x%/y%，f=1 表示下半区倒转），J/Q/K 走花框，A 单大点 */
+const PIP_LAYOUT = {
+  2:  [[50, 12], [50, 88, 1]],
+  3:  [[50, 12], [50, 50], [50, 88, 1]],
+  4:  [[27, 12], [73, 12], [27, 88, 1], [73, 88, 1]],
+  5:  [[27, 12], [73, 12], [50, 50], [27, 88, 1], [73, 88, 1]],
+  6:  [[27, 12], [73, 12], [27, 50], [73, 50], [27, 88, 1], [73, 88, 1]],
+  7:  [[27, 12], [73, 12], [50, 31], [27, 50], [73, 50], [27, 88, 1], [73, 88, 1]],
+  8:  [[27, 12], [73, 12], [50, 31], [27, 50], [73, 50], [50, 69, 1], [27, 88, 1], [73, 88, 1]],
+  9:  [[27, 12], [73, 12], [27, 37], [73, 37], [50, 50], [27, 63, 1], [73, 63, 1], [27, 88, 1], [73, 88, 1]],
+  10: [[27, 12], [73, 12], [50, 25], [27, 37], [73, 37], [27, 63, 1], [73, 63, 1], [50, 75, 1], [27, 88, 1], [73, 88, 1]],
+};
 function cardFace(c) {
-  if (c.s === 4) return { label: 'J', suit: '♛', red: false, knight: true };
-  return { label: RANK_TXT[c.r], suit: SUITS[c.s], red: RED_SUITS.includes(c.s), knight: false };
+  if (c.s === 4) return { label: 'J', suit: '♛', red: false, knight: true, court: true, ace: false, pips: [] };
+  const court = c.r >= 11 && c.r <= 13;   // J Q K
+  return {
+    label: RANK_TXT[c.r], suit: SUITS[c.s], red: RED_SUITS.includes(c.s), knight: false,
+    court, ace: c.r === 14,
+    pips: court ? [] : (PIP_LAYOUT[c.r] || [[50, 50]]).map(p => ({ x: p[0], y: p[1], f: p[2] || 0 })),
+  };
 }
 /* rich-text 牌面片段（弹窗内使用） */
 function cardSpan(c, hl) {

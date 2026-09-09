@@ -64,23 +64,38 @@
 .centerChips { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 540px; min-height: 42px; }
 .noChip { color: #cfe8da; font-size: 12px; }
 
-/* ---------- 扑克牌 ---------- */
+/* ---------- 扑克牌（经典样式：白底 + 对角角标 + 中央点阵/花框） ---------- */
 .pcard {
-  width: 46px; height: 66px; background: #fdfcf7; color: #111;
+  width: 46px; height: 66px; background: #fffdf8; color: #1b1b1b;
   border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,.4);
-  position: relative; font-weight: bold; flex: none;
+  border: 1px solid rgba(0,0,0,.22); box-sizing: border-box;
+  position: relative; font-weight: bold; flex: none; overflow: hidden;
 }
 .pcard.small { width: 46px; height: 66px; }
 .pcard.tiny { width: 34px; height: 48px; }
 .pcard .corner {
-  position: absolute; top: 3px; left: 5px;
-  font-size: 11px; line-height: 1.05; text-align: center;
-  display: flex; flex-direction: column;
+  position: absolute; top: 3px; left: 4px; z-index: 2;
+  text-align: center; display: flex; flex-direction: column; align-items: center;
 }
-.pcard .corner.br { top: auto; left: auto; bottom: 3px; right: 5px; transform: rotate(180deg); }
-.pcard .pip { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font-size: 22px; }
-.pcard.red { color: #c8352e; }
-.pcard.knight { background: #dfe3df; color: #556; }
+.pcard .corner .rg { font-size: 11px; line-height: 1.02; letter-spacing: -0.5px; }
+.pcard .corner .st { font-size: 9px; line-height: 1.05; }
+.pcard .corner.br { top: auto; left: auto; bottom: 3px; right: 4px; transform: rotate(180deg); }
+/* 中央点阵区（2~10 按真实牌型布点，A 单大点） */
+.pcard .pipsArea { position: absolute; left: 25%; right: 25%; top: 9%; bottom: 9%; }
+.pcard .pipI { position: absolute; transform: translate(-50%, -50%); font-size: 11px; line-height: 1; }
+.pcard .pipI.fl { transform: translate(-50%, -50%) rotate(180deg); }
+.pcard .pipsArea.ace .pipI { font-size: 24px; }
+/* J/Q/K 中央花框 */
+.pcard .courtBox {
+  position: absolute; left: 20%; right: 20%; top: 14%; bottom: 14%;
+  border: 1px solid currentColor; border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.03);
+}
+.pcard .cLtr { font-size: 17px; line-height: 1; }
+.pcard .cSuit { font-size: 10px; line-height: 1.15; }
+.pcard.red { color: #cf3a2f; }
+.pcard.knight { background: #eef0ec; color: #4a5068; }
 .pcard.back {
   background: repeating-linear-gradient(45deg, #274e68 0 6px, #1d3d52 6px 12px);
   border: 3px solid #fdfcf7; box-sizing: border-box;
@@ -247,11 +262,17 @@
 
 
 /* ---------- tiny 完整卡面 ---------- */
-.pcard.tiny .corner { top: 2px; left: 3px; font-size: 8px; line-height: 1.1; }
+.pcard.tiny .corner { top: 2px; left: 3px; }
+.pcard.tiny .corner .rg { font-size: 8px; }
+.pcard.tiny .corner .st { font-size: 7px; }
 .pcard.tiny .corner.br { top: auto; left: auto; bottom: 2px; right: 3px; }
-.pcard.tiny .pip { top: 10px; font-size: 15px; }
+.pcard.tiny .pipI { font-size: 7px; }
+.pcard.tiny .pipsArea.ace .pipI { font-size: 16px; }
+.pcard.tiny .cLtr { font-size: 12px; }
+.pcard.tiny .cSuit { font-size: 7px; }
 .pcard.tiny.faceUp { width: 38px; height: 54px; }
-.pcard.tiny.faceUp .pip { top: 12px; font-size: 16px; }
+.pcard.tiny.faceUp .pipI { font-size: 8px; }
+.pcard.tiny.faceUp .pipsArea.ace .pipI { font-size: 18px; }
 
 
 /* ---------- 弹窗内完整卡面 ---------- */
@@ -275,8 +296,10 @@
 .seatM .holeRow .eye { margin-left: 2px; }
 .pcard.tiny { width: 30px; height: 44px; }
 .pcard.tiny.faceUp { width: 32px; height: 46px; }
-.pcard.tiny .pip { top: 8px; font-size: 13px; }
-.pcard.tiny .corner { font-size: 7px; top: 1px; left: 2px; }
+.pcard.tiny .pipI { font-size: 6px; }
+.pcard.tiny .pipsArea.ace .pipI { font-size: 14px; }
+.pcard.tiny .cLtr { font-size: 11px; }
+.pcard.tiny .corner { top: 1px; left: 2px; }
 .pcard.tiny .corner.br { top: auto; left: auto; bottom: 1px; right: 2px; }
 .chip.mini { width: 26px; height: 26px; }
 .chip.mini .starDot { font-size: 6px; }
