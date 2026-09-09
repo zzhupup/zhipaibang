@@ -105,11 +105,11 @@
   <!-- 模板：座位内部 -->
   <template name="tSeat">
     <view class="seatHead">
+      <text class="pname">{{p.name}}</text>
       <view wx:if="{{p.msg}}" class="chatTicker">
         <text class="chatTickerTxt {{p.msg.length > 8 ? 'run' : ''}}"
           style="{{p.msg.length > 8 ? 'animation-duration:' + (p.msg.length * 0.4) + 's' : ''}}">{{p.msg}}</text>
       </view>
-      <text class="pname">{{p.name}}</text>
       <text wx:if="{{p.striker}}" class="badge">👊</text><text wx:if="{{p.isMe}}" class="badge me">你</text>
     </view>
     <view class="holeRow">
