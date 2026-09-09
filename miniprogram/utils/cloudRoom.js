@@ -110,31 +110,48 @@ async function leaveRoom(roomId, playerId) {
   return {};
 }
 
-/* ---------- 实时监听通用包装：断线自动重连 ----------
-   云开发实时推送偶发 ws 登录失败（如 -602002 / wsclient.send timeout），
-   重连后首帧会重新推送当前数据，回调天然幂等。重试耗尽才上报 onError。 */
-function watchWithRetry(createFn, cb, onError, maxRetry) {
-  let closed = false, tries = 0, watcher = null;
+/* ---------- 实时监听通用包装：断线自动重连 + HTTP 轮询兜底 ----------
+   云开发实时推送（ws）在不稳定网络/代理环境下可能持续登录失败（-602002），
+   而 HTTPS 普通请求是通的。因此：
+   1. ws 断开期间每 3 秒通过普通 get 拉一次数据（pollFn），同一回调推送（幂等）；
+   2. 同时持续尝试 ws 重连，重连成功（首帧推送）即停轮询；
+   3. 重试日志每 5 次才打一条，避免刷屏。 */
+function watchWithRetry(createFn, cb, onError, maxRetry, pollFn) {
+  let closed = false, tries = 0, watcher = null, pollTimer = null;
+  const startPoll = () => {
+    if (closed || !pollFn || pollTimer) return;
+    pollTimer = setInterval(async () => {
+      if (closed) return;
+      try {
+        const d = await pollFn();
+        if (d !== null && d !== undefined) cb(d);
+      } catch (e) { /* 轮询失败静默，下个周期再试 */ }
+    }, 3000);
+  };
+  const stopPoll = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
   const start = () => {
     if (closed) return;
     watcher = createFn(
-      doc => cb(doc),
+      doc => { stopPoll(); cb(doc); },
       e => {
         if (closed) return;
         tries += 1;
         try { watcher && watcher.close(); } catch (err) {}
+        startPoll();   // ws 挂了立即启用 HTTP 轮询兜底
         if (tries <= maxRetry) {
-          console.warn('[cloud] 实时监听断开，2秒后重连 (' + tries + '/' + maxRetry + ')',
-            e && (e.errCode || e.message || ''));
+          if (tries % 5 === 1) {
+            console.warn('[cloud] 实时监听断开，轮询兜底中，2秒后重连 (' + tries + '/' + maxRetry + ')',
+              e && (e.errCode || e.message || ''));
+          }
           setTimeout(start, 2000);
         } else {
-          onError && onError(e);
+          onError && onError(e);   // 重连放弃，但轮询继续（游戏不中断）
         }
       }
     );
   };
   start();
-  return { close() { closed = true; try { watcher && watcher.close(); } catch (e) {} } };
+  return { close() { closed = true; stopPoll(); try { watcher && watcher.close(); } catch (e) {} } };
 }
 
 /* ---------- 房间文档监听 ---------- */
@@ -144,10 +161,14 @@ function watchRoom(roomId, cb, onError) {
       onChange: snap => { if (snap.docs && snap.docs[0]) ok(snap.docs[0]); },
       onError: fail,
     }),
-    cb, onError, 20
+    cb, onError, 20,
+    async () => {
+      const r = await db.collection('rooms').doc(roomId).get().catch(() => null);
+      return (r && r.data) || null;
+    }
   );
 }
-/* ---------- 玩家列表监听（大厅，只推 20 秒内有心跳的在线玩家） ---------- */
+/* ---------- 玩家列表监听（大厅，只推 45 秒内有心跳的在线玩家） ---------- */
 function watchPlayers(roomId, cb, onError) {
   return watchWithRetry(
     (ok, fail) => db.collection('players').where({ roomId }).watch({
@@ -159,7 +180,8 @@ function watchPlayers(roomId, cb, onError) {
       },
       onError: fail,
     }),
-    cb, onError, 20
+    cb, onError, 20,
+    () => listPlayers(roomId)
   );
 }
 /* ---------- 本人私密文档监听 ---------- */
@@ -170,7 +192,11 @@ function watchHand(roomId, seat, cb, onError) {
       onChange: snap => { if (snap.docs && snap.docs[0]) ok(snap.docs[0]); },
       onError: fail,
     }),
-    cb, onError, 30
+    cb, onError, 30,
+    async () => {
+      const r = await db.collection('hands').doc(docId).get().catch(() => null);
+      return (r && r.data) || null;
+    }
   );
 }
 
@@ -214,8 +240,10 @@ async function sendAction(roomId, a) {
     data: Object.assign({ roomId, created: Date.now() }, a),
   });
 }
-/* 房主监听操作馈送 */
+/* 房主监听操作馈送（轮询路径按 _id 去重，避免重复投递） */
 function watchActions(roomId, cb, onError) {
+  const seen = new Set();
+  const deliver = doc => { if (doc && doc._id && !seen.has(doc._id)) { seen.add(doc._id); cb(doc); } };
   return watchWithRetry(
     (ok, fail) => db.collection('actions').where({ roomId }).orderBy('created', 'asc').watch({
       onChange: snap => {
@@ -225,7 +253,11 @@ function watchActions(roomId, cb, onError) {
       },
       onError: fail,
     }),
-    cb, onError, 20
+    deliver, onError, 20,
+    async () => {
+      const r = await db.collection('actions').where({ roomId }).orderBy('created', 'asc').limit(20).get();
+      return r.data;
+    }
   );
 }
 async function removeAction(actionId) {
