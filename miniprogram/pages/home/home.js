@@ -60,6 +60,10 @@ Page({
   goRoom(e) {
     const action = e.currentTarget.dataset.v;
     const nick = (this.data.nick || '').trim() || (action === 'create' ? '房主' : '玩家');
+    if (action === 'join' && !this.data.joinCode) {
+      wx.showToast({ title: '请点开好友分享的房间卡片加入', icon: 'none' });
+      return;
+    }
     let url = `/pages/room/room?action=${action}&name=${encodeURIComponent(nick)}`;
     if (action === 'join' && this.data.joinCode) url += '&joinCode=' + this.data.joinCode;
     wx.navigateTo({ url });

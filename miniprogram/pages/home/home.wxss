@@ -28,14 +28,14 @@
   background: linear-gradient(rgba(16,44,32,.92), rgba(9,26,19,.92));
   border: 2rpx solid rgba(46,122,88,.75);
   border-radius: 28rpx;
-  padding: 34rpx 30rpx;
-  margin-top: 26rpx;
+  padding: 36rpx 32rpx;
+  margin-top: 30rpx;
   box-shadow: 0 14rpx 44rpx rgba(0,0,0,.5), inset 0 2rpx 0 rgba(125,216,168,.12);
 }
 .secTitle {
   font-size: 28rpx; color: #e8c15a; font-weight: bold;
   display: flex; align-items: center; gap: 14rpx;
-  margin: 30rpx 0 16rpx;
+  margin: 34rpx 0 18rpx;
 }
 .secTitle::before { content: ''; width: 8rpx; height: 28rpx; background: #e8c15a; border-radius: 4rpx; }
 
@@ -46,7 +46,7 @@
   background: rgba(255,255,255,.05);
   border: 3rpx solid rgba(46,122,88,.6);
   border-radius: 20rpx;
-  padding: 24rpx 12rpx;
+  padding: 30rpx 12rpx;
   text-align: center;
   transition: all .15s;
 }
@@ -61,7 +61,7 @@
 .mDesc { font-size: 21rpx; color: #8fb8a3; margin-top: 6rpx; }
 
 /* ---- 输入 ---- */
-.nickInput, .joinInput, .nameInput {
+.nickInput, .nameInput {
   background: rgba(255,255,255,.07);
   border: 2rpx solid rgba(46,122,88,.8);
   color: #fff;
@@ -71,11 +71,10 @@
 .phc { color: #5f8a76; }
 
 /* ---- 昵称行：标题与输入框同行 ---- */
-.nickRow { display: flex; align-items: center; gap: 16rpx; }
+.nickRow { display: flex; align-items: center; gap: 16rpx; margin-top: 38rpx; }
 .nickRow .secTitle { margin: 0; flex: none; }
-.nickInput { flex: 1; width: auto; padding: 18rpx 24rpx; font-size: 29rpx; }
-.joinInput { padding: 18rpx 20rpx; font-size: 34rpx; letter-spacing: 10rpx; text-align: center; flex: 1; }
-.nameInput { padding: 14rpx 18rpx; font-size: 26rpx; width: calc((100% - 24rpx) / 3); text-align: center; }
+.nickInput { flex: 1; width: auto; padding: 20rpx 24rpx; font-size: 29rpx; }
+.nameInput { padding: 16rpx 18rpx; font-size: 26rpx; width: calc((100% - 24rpx) / 3); text-align: center; }
 .nameRow { display: flex; flex-wrap: wrap; gap: 12rpx; }
 
 /* ---- 主按钮 ---- */
@@ -86,11 +85,8 @@
   font-weight: bold;
   box-shadow: 0 8rpx 22rpx rgba(216,169,63,.3);
 }
-.createBtn { display: block; width: 100%; margin: 34rpx 0 30rpx; font-size: 32rpx; padding: 22rpx 0; }
-
-/* ---- 加入行 ---- */
-.joinRow { display: flex; gap: 14rpx; align-items: stretch; }
-.joinBtn { width: 230rpx; margin: 0; font-size: 30rpx; padding: 0; line-height: 2.6; }
+.createBtn { display: block; width: 100%; margin: 40rpx 0 0; font-size: 32rpx; padding: 24rpx 0; box-sizing: border-box; }
+.joinBtn { display: block; width: 100%; margin: 22rpx 0 0; font-size: 32rpx; padding: 24rpx 0; box-sizing: border-box; line-height: 1.4; }
 .modeDesc { font-size: 22rpx; color: #7ba28e; margin-top: 16rpx; text-align: center; }
 
 /* ---- 同屏热座 ---- */
