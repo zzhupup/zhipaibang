@@ -63,34 +63,67 @@ async function listPlayers(roomId) {
   return res.data.map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
 }
 
+/* ---------- 实时监听通用包装：断线自动重连 ----------
+   云开发实时推送偶发 ws 登录失败（如 -602002 / wsclient.send timeout），
+   重连后首帧会重新推送当前数据，回调天然幂等。重试耗尽才上报 onError。 */
+function watchWithRetry(createFn, cb, onError, maxRetry) {
+  let closed = false, tries = 0, watcher = null;
+  const start = () => {
+    if (closed) return;
+    watcher = createFn(
+      doc => cb(doc),
+      e => {
+        if (closed) return;
+        tries += 1;
+        try { watcher && watcher.close(); } catch (err) {}
+        if (tries <= maxRetry) {
+          console.warn('[cloud] 实时监听断开，2秒后重连 (' + tries + '/' + maxRetry + ')',
+            e && (e.errCode || e.message || ''));
+          setTimeout(start, 2000);
+        } else {
+          onError && onError(e);
+        }
+      }
+    );
+  };
+  start();
+  return { close() { closed = true; try { watcher && watcher.close(); } catch (e) {} } };
+}
+
 /* ---------- 房间文档监听 ---------- */
 function watchRoom(roomId, cb, onError) {
-  const watcher = db.collection('rooms').doc(roomId).watch({
-    onChange: snap => { if (snap.docs && snap.docs[0]) cb(snap.docs[0]); },
-    onError: e => { onError && onError(e); },
-  });
-  return watcher;
+  return watchWithRetry(
+    (ok, fail) => db.collection('rooms').doc(roomId).watch({
+      onChange: snap => { if (snap.docs && snap.docs[0]) ok(snap.docs[0]); },
+      onError: fail,
+    }),
+    cb, onError, 20
+  );
 }
 /* ---------- 玩家列表监听（大厅） ---------- */
 function watchPlayers(roomId, cb, onError) {
-  const watcher = db.collection('players').where({ roomId }).watch({
-    onChange: snap => {
-      const list = (snap.docs || []).sort((a, b) => a.created - b.created)
-        .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
-      cb(list);
-    },
-    onError: e => { onError && onError(e); },
-  });
-  return watcher;
+  return watchWithRetry(
+    (ok, fail) => db.collection('players').where({ roomId }).watch({
+      onChange: snap => {
+        const list = (snap.docs || []).sort((a, b) => a.created - b.created)
+          .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
+        ok(list);
+      },
+      onError: fail,
+    }),
+    cb, onError, 20
+  );
 }
 /* ---------- 本人私密文档监听 ---------- */
 function watchHand(roomId, seat, cb, onError) {
   const docId = roomId + '_' + seat;
-  const watcher = db.collection('hands').doc(docId).watch({
-    onChange: snap => { if (snap.docs && snap.docs[0]) cb(snap.docs[0]); },
-    onError: e => { onError && onError(e); },
-  });
-  return watcher;
+  return watchWithRetry(
+    (ok, fail) => db.collection('hands').doc(docId).watch({
+      onChange: snap => { if (snap.docs && snap.docs[0]) ok(snap.docs[0]); },
+      onError: fail,
+    }),
+    cb, onError, 30
+  );
 }
 
 /* ---------- 房主写公开快照 ---------- */
@@ -133,15 +166,17 @@ async function sendAction(roomId, a) {
 }
 /* 房主监听操作馈送 */
 function watchActions(roomId, cb, onError) {
-  const watcher = db.collection('actions').where({ roomId }).orderBy('created', 'asc').watch({
-    onChange: snap => {
-      (snap.docChanges || []).forEach(ch => {
-        if ((ch.dataType === 'add' || ch.dataType === 'update') && ch.doc) cb(ch.doc);
-      });
-    },
-    onError: e => { onError && onError(e); },
-  });
-  return watcher;
+  return watchWithRetry(
+    (ok, fail) => db.collection('actions').where({ roomId }).orderBy('created', 'asc').watch({
+      onChange: snap => {
+        (snap.docChanges || []).forEach(ch => {
+          if ((ch.dataType === 'add' || ch.dataType === 'update') && ch.doc) ok(ch.doc);
+        });
+      },
+      onError: fail,
+    }),
+    cb, onError, 20
+  );
 }
 async function removeAction(actionId) {
   try { await db.collection('actions').doc(actionId).remove(); } catch (e) {}
