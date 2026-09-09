@@ -43,7 +43,9 @@
         <view wx:else class="slot"><text>公共牌</text></view>
       </block>
     </view>
+    <view class="deckRow"><view class="pcard small back"></view>
     <view class="deckRow"><view class="pcard small back"></view><text class="deckTxt">牌堆 {{deckCount}} · 弃牌 {{discardCount}}</text></view>
+    <view wx:if="{{round===1}}" class="r1hint">第1轮无公共牌 · 底牌已发到下方你的座位卡（仅自己可见）</view>
     <view class="centerChips">
       <view wx:for="{{centerChips}}" wx:key="star" class="chip {{item.colorCls}}" hover-class="chipHover"
         catchtap="onCenterChip" data-star="{{item.star}}">
@@ -97,7 +99,7 @@
       <view class="stage" style="width:{{stageW}}px;height:{{stageH}}px;transform:scale({{scale}})">
         <view class="roundTable"><view class="feltMark">筹 码 密 语</view></view>
         <view class="centerArea">
-          <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase}}"/>
+          <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase, round}}"/>
         </view>
         <view class="seat" wx:for="{{seats}}" wx:key="i" style="left:{{item.x}}px;top:{{item.y}}px">
           <template is="tSeat" data="{{p:item, phase}}"/>
@@ -111,7 +113,7 @@
     <scroll-view scroll-y class="stackScroll">
       <view class="feltPanel">
         <view class="feltMarkM">筹 码 密 语</view>
-        <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase}}"/>
+        <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase, round}}"/>
       </view>
       <view class="seatGrid">
         <view class="seatM {{item.isMe?'me':''}}" wx:for="{{seats}}" wx:key="i">

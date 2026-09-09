@@ -283,3 +283,5 @@
 .chipLine { gap: 5rpx; }
 .actionRow .returnBtn, .actionRow .confirmBtn { font-size: 23rpx; padding: 4rpx 0; }
 .seatM .msg { font-size: 20rpx; }
+
+.r1hint { color: rgba(255,233,176,.8); font-size: 20rpx; margin-top: 8rpx; letter-spacing: 1rpx; }
