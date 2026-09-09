@@ -84,8 +84,32 @@ Page({
       // 客人：只渲染 + 发送操作
       cloudRoom.init();
       this.shownPromptPid = 0;
-      this.watchAsGuest();
+      this.myPlayerId = options.pid || '';
+      this.watchAsGuestWithSeat();
     }
+  },
+
+  /* 客人：先用自己的玩家文档 _id 校正座位，再启动监听。
+     URL 上的 seat 可能因大厅列表未就绪而是 -1（会导致：底牌监听错文档、拿筹码被房主判无效座位） */
+  watchAsGuestWithSeat() {
+    const start = () => this.watchAsGuest();
+    if (!this.myPlayerId) {
+      console.log('[guest] 无 pid，沿用 URL 座位', this.mySeat);
+      start();
+      return;
+    }
+    cloudRoom.listPlayers(this.roomId).then(list => {
+      const me = list.find(p => p.id === this.myPlayerId);
+      if (me && me.seat !== this.mySeat) {
+        console.log('[guest] 座位校正', this.mySeat, '→', me.seat);
+        this.mySeat = me.seat;
+        this.setData({ mySeat: this.mySeat });
+      }
+      start();
+    }).catch(e => {
+      console.warn('[guest] 座位校正失败，沿用 URL 座位', e && (e.errMsg || e.message));
+      start();
+    });
   },
 
   onShow() {
@@ -380,16 +404,17 @@ Page({
     const tryWatch = (retries) => {
       try {
         this._handWatcher = cloudRoom.watchHand(this.roomId, this.mySeat, doc => {
+          console.log('[guest] 收到底牌文档 seat=', this.mySeat, 'hole=', doc && doc.hole && doc.hole.length);
           this._myHand = doc;
           this.applyGuestViews(this._lastSnap);
         }, () => {
-          if (retries > 0) setTimeout(() => tryWatch(retries - 1), 1500);
+          if (retries > 0) setTimeout(() => tryWatch(retries - 1), 2000);
         });
       } catch (e) {
-        if (retries > 0) setTimeout(() => tryWatch(retries - 1), 1500);
+        if (retries > 0) setTimeout(() => tryWatch(retries - 1), 2000);
       }
     };
-    tryWatch(10);
+    tryWatch(45);
   },
   /* 由 watch 数据声明式推导客人的弹层 */
   applyGuestViews(snap) {

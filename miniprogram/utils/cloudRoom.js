@@ -23,11 +23,10 @@ function init() {
 }
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
 
-/* ---------- 房主 ---------- */
+/* ---------- 房主 ----------
+   注意：客户端 add() 返回值不含 _openid（真机已验证），身份标识一律用玩家文档 _id */
 async function createRoom(name) {
   init();
-  const p = await db.collection('players').add({ data: { name: name || '房主', created: Date.now(), first: true } });
-  const openid = p._openid;
   let code = genCode();
   // 检查房间号是否被占用（占用则换号重试）
   for (let i = 0; i < 5; i++) {
@@ -39,14 +38,13 @@ async function createRoom(name) {
   await db.collection('rooms').doc(code).set({
     data: {
       status: 'lobby',
-      hostOpenid: openid,
       hostName: name || '房主',
       createdAt: Date.now(),
       public: {},
     }
   });
-  await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
-  return { roomId: code, openid };
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
+  return { roomId: code, playerId: p._id };
 }
 
 /* ---------- 玩家加入 ---------- */
@@ -56,13 +54,13 @@ async function joinRoom(code, name) {
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
   const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now() } });
-  return { roomId: code, openid: p._openid };
+  return { roomId: code, playerId: p._id };
 }
 
 /* ---------- 玩家列表（按加入时间排序 → 座位号） ---------- */
 async function listPlayers(roomId) {
   const res = await db.collection('players').where({ roomId }).orderBy('created', 'asc').limit(20).get();
-  return res.data.map((d, i) => ({ openid: d._openid, name: d.name, seat: i }));
+  return res.data.map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
 }
 
 /* ---------- 房间文档监听 ---------- */
@@ -78,7 +76,7 @@ function watchPlayers(roomId, cb, onError) {
   const watcher = db.collection('players').where({ roomId }).watch({
     onChange: snap => {
       const list = (snap.docs || []).sort((a, b) => a.created - b.created)
-        .map((d, i) => ({ openid: d._openid, name: d.name, seat: i }));
+        .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i }));
       cb(list);
     },
     onError: e => { onError && onError(e); },

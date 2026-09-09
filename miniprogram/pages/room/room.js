@@ -4,7 +4,6 @@ Page({
   data: {
     action: 'create',        // create | join
     roomId: '',
-    myOpenid: '',
     isHost: false,
     mySeat: -1,
     players: [],
@@ -38,10 +37,10 @@ Page({
   async doCreate() {
     this.setData({ loading: true });
     try {
-      const { roomId, openid } = await cloudRoom.createRoom(this.name);
+      const { roomId, playerId } = await cloudRoom.createRoom(this.name);
       this.roomId = roomId;
-      this.myOpenid = openid;
-      this.setData({ roomId, myOpenid: openid, isHost: true, mySeat: 0, loading: false });
+      this.myPlayerId = playerId;   // 身份标识 = 玩家文档 _id（add 不返回 openid，真机已验证）
+      this.setData({ roomId, isHost: true, mySeat: 0, loading: false });
       this.startWatch();
     } catch (e) {
       this.setData({ error: '创建失败：' + (e.message || e.errMsg || ''), loading: false });
@@ -53,10 +52,9 @@ Page({
     if (!/^\d{6}$/.test(code)) { this.setData({ error: '请输入 6 位房间号' }); return; }
     this.setData({ loading: true, error: '' });
     try {
-      const { roomId, openid } = await cloudRoom.joinRoom(code, this.name);
-      this.roomId = roomId;
-      this.myOpenid = openid;
-      this.setData({ roomId, myOpenid: openid, isHost: false, loading: false });
+      const { roomId, playerId } = await cloudRoom.joinRoom(code, this.name);
+      this.myPlayerId = playerId;
+      this.setData({ roomId, isHost: false, loading: false });
       this.startWatch();
     } catch (e) {
       this.setData({ error: e.message || '加入失败', loading: false });
@@ -67,7 +65,8 @@ Page({
     // 立即主动拉一次玩家列表（防止 watch 初始推送为空或异常导致列表空白）
     const applyList = list => {
       if (list && list.length) {
-        const me = list.find(p => p.openid === this.myOpenid);
+        // 关键：用玩家文档 _id 匹配自己（此前用 openid 匹配，add() 不返回 openid 导致永远匹配不到 → mySeat=-1 → 进桌后暗牌、点不了筹码）
+        const me = list.find(p => p.id === this.myPlayerId);
         this.setData({ players: list, mySeat: me ? me.seat : this.data.mySeat });
       }
     };
@@ -82,7 +81,7 @@ Page({
       if (doc.status === 'playing') {
         const mode = this.data.isHost ? 'host' : 'guest';
         wx.redirectTo({
-          url: `/pages/table/table?mode=${mode}&roomId=${this.roomId}&seat=${this.data.mySeat}`,
+          url: `/pages/table/table?mode=${mode}&roomId=${this.roomId}&seat=${this.data.mySeat}&pid=${this.myPlayerId || ''}`,
         });
       }
     }, e => this.setData({ error: '实时连接中断，请重进' }));

@@ -28,7 +28,7 @@
 
     <view class="secTitle">帮众（{{players.length}}）</view>
     <view class="plist">
-      <view wx:for="{{players}}" wx:key="openid" class="pitem {{item.seat===mySeat?'me':''}}">
+      <view wx:for="{{players}}" wx:key="id" class="pitem {{item.seat===mySeat?'me':''}}">
         <text class="pseat">{{item.seat+1}}号</text>
         <text class="pname">{{item.name}}</text>
         <text wx:if="{{item.seat===0}}" class="hostTag">房主</text>
