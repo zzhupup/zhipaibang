@@ -38,7 +38,7 @@ async function createRoom(name) {
   // 先建玩家文档拿到 playerId；房间文档记录 hostPid（房主离开时据此转交）
   // lastSeen = 在线心跳标记，用**服务端时间**（serverDate）写入：
   // 各手机本地时钟偏差可达数分钟，用本地时间会让"时钟快的手机"把所有人都判为离线
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now(), lastSeen: db.command.serverDate() } });
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now(), lastSeen: db.serverDate() } });
   await db.collection('rooms').doc(code).set({
     data: {
       status: 'lobby',
@@ -57,7 +57,7 @@ async function joinRoom(code, name) {
   const doc = await db.collection('rooms').doc(code).get();
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: db.command.serverDate() } });
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: db.serverDate() } });
   return { roomId: code, playerId: p._id };
 }
 
@@ -101,7 +101,7 @@ async function listPlayers(roomId, myId) {
 function startHeartbeat(roomId, playerId) {
   if (!roomId || !playerId || !db) return { stop() {} };
   const tick = () => db.collection('players').doc(playerId)
-    .update({ data: { lastSeen: db.command.serverDate() } }).catch(() => {});
+    .update({ data: { lastSeen: db.serverDate() } }).catch(() => {});
   tick();
   const timer = setInterval(tick, 5000);
   return { stop() { clearInterval(timer); } };
