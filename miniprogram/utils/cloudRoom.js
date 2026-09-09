@@ -254,9 +254,13 @@ function watchActions(roomId, cb, onError) {
       onError: fail,
     }),
     deliver, onError, 20,
+    // 轮询拿到的是数组，必须逐条自行投递（返回 null 跳过通用单文档投递）。
+    // 此前直接 return 数组被当单文档处理 → _id 取不到 → 客人所有回复被静默丢弃，
+    // 房主永远等不到"确认"，游戏卡死在发牌弹窗（筹码不上桌）。
     async () => {
       const r = await db.collection('actions').where({ roomId }).orderBy('created', 'asc').limit(20).get();
-      return r.data;
+      r.data.forEach(deliver);
+      return null;
     }
   );
 }
