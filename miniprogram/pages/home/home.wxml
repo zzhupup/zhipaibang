@@ -1,53 +1,72 @@
 <view class="wrap">
+  <!-- Hero：扑克花色装饰 + 标题 -->
   <view class="hero">
-    <text class="title">筹 码 密 语</text>
-    <text class="sub">合作扑克劫案 · 无言的配合</text>
-    <text class="tip">3~6 人 · 同一部手机轮流操作 · 全程禁止说牌</text>
+    <view class="suits">
+      <text class="sp">♠</text><text class="ht">♥</text><text class="cl">♣</text><text class="dm">♦</text>
+    </view>
+    <view class="title">筹码密语</view>
+    <view class="sub">合作扑克劫案 · 无言的配合</view>
+    <view class="tipRow">
+      <text class="tipChip">3~6 人</text>
+      <text class="tipChip">在线联机 / 同屏热座</text>
+      <text class="tipChip">全程禁止说牌</text>
+    </view>
   </view>
 
   <view class="panel">
-    <view class="secTitle">联机方式</view>
-    <view class="optRow">
-      <button class="opt {{playMode==='online'?'sel':''}}" bindtap="pickPlay" data-v="online">在线联机（各自手机）</button>
-      <button class="opt {{playMode==='single'?'sel':''}}" bindtap="pickPlay" data-v="single">同屏热座（一部手机）</button>
+    <view class="secTitle">选择玩法</view>
+    <view class="modeCards">
+      <view class="mcard {{playMode==='online'?'sel':''}}" bindtap="pickPlay" data-v="online">
+        <text class="mIcon">📱</text>
+        <view class="mName">在线联机</view>
+        <view class="mDesc">各自手机 · 房间号组队</view>
+      </view>
+      <view class="mcard {{playMode==='single'?'sel':''}}" bindtap="pickPlay" data-v="single">
+        <text class="mIcon">🂠</text>
+        <view class="mName">同屏热座</view>
+        <view class="mDesc">一部手机 · 轮流操作</view>
+      </view>
     </view>
 
     <!-- 在线联机 -->
     <block wx:if="{{playMode==='online'}}">
       <view class="secTitle">你的昵称</view>
-      <input class="nickInput" placeholder="输入昵称" value="{{nick}}" bindinput="onNick" />
-      <view class="optRow">
-        <button class="opt big" bindtap="goRoom" data-v="create">🏠 创建房间</button>
-        <view class="joinRow">
-          <input class="joinInput" type="number" maxlength="6" placeholder="房间号"
-            value="{{joinCode}}" bindinput="onJoinCode" />
-          <button class="opt big" bindtap="goRoom" data-v="join">加入</button>
-        </view>
+      <input class="nickInput" placeholder="给自己起个代号" placeholder-class="phc"
+        maxlength="8" value="{{nick}}" bindinput="onNick" />
+
+      <button class="btn primary createBtn" bindtap="goRoom" data-v="create">🏠 创建房间</button>
+
+      <view class="divider"><text>或加入好友</text></view>
+
+      <view class="joinRow">
+        <input class="joinInput" type="number" maxlength="6" placeholder="房间号"
+          placeholder-class="phc" value="{{joinCode}}" bindinput="onJoinCode" />
+        <button class="btn joinBtn" bindtap="goRoom" data-v="join">加入</button>
       </view>
-      <view class="modeDesc">需开通微信云开发（见 README），好友通过房间号或分享卡片加入</view>
+      <view class="modeDesc">好友通过 6 位房间号或微信分享卡片加入</view>
     </block>
 
     <!-- 同屏热座 -->
     <block wx:if="{{playMode==='single'}}">
       <view class="secTitle">游戏模式</view>
-      <view class="optRow">
-        <button class="opt {{mode==='standard'?'sel':''}}" bindtap="pickMode" data-v="standard">标准游戏</button>
-        <button class="opt {{mode==='advanced'?'sel':''}}" bindtap="pickMode" data-v="advanced">进阶模式</button>
+      <view class="segRow">
+        <button class="opt {{mode==='standard'?'sel':''}}" bindtap="pickMode" data-v="standard">标准</button>
+        <button class="opt {{mode==='advanced'?'sel':''}}" bindtap="pickMode" data-v="advanced">进阶</button>
       </view>
-      <view class="modeDesc">{{mode==='advanced'?'成功后启用挑战牌、失败后启用专家牌，各 10 张':'第一次玩建议标准模式'}}</view>
+      <view class="modeDesc">{{mode==='advanced'?'启用挑战牌与专家牌（各 10 张），更刺激':'第一次玩建议标准模式'}}</view>
 
       <view class="secTitle">玩家人数</view>
-      <view class="optRow">
+      <view class="segRow">
         <button wx:for="{{[3,4,5,6]}}" wx:key="*this" class="opt cnt {{n===item?'sel':''}}" bindtap="pickCount" data-v="{{item}}">{{item}} 人</button>
       </view>
 
       <view class="secTitle">玩家名字</view>
       <view class="nameRow">
         <input wx:for="{{names}}" wx:key="index" class="nameInput" placeholder="玩家{{index+1}}"
-          value="{{item}}" data-i="{{index}}" bindinput="onName" />
+          placeholder-class="phc" value="{{item}}" data-i="{{index}}" bindinput="onName" />
       </view>
 
-      <button class="btn startBtn" bindtap="start">开始游戏</button>
+      <button class="btn primary startBtn" bindtap="start">开始游戏</button>
     </block>
 
     <button class="btn ghost ruleBtn" bindtap="openRules">📖 规则说明</button>

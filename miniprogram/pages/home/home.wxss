@@ -1,74 +1,119 @@
-.wrap { padding: 30rpx; }
-.hero { text-align: center; padding: 30rpx 0 10rpx; }
-.title { display: block; font-size: 64rpx; letter-spacing: 12rpx; color: #e8c15a; font-weight: bold; }
-.sub { display: block; color: #9fc7b2; letter-spacing: 4rpx; margin-top: 8rpx; font-size: 26rpx; }
-.tip { display: block; color: #6f9c88; font-size: 22rpx; margin-top: 8rpx; }
+/* ===================== 首页 ===================== */
+.wrap { padding: 30rpx 34rpx 10rpx; }
 
+/* ---- Hero ---- */
+.hero { text-align: center; padding: 26rpx 0 8rpx; }
+.suits { font-size: 34rpx; letter-spacing: 18rpx; margin-bottom: 6rpx; }
+.suits .sp { color: #cfe8da; }
+.suits .ht { color: #e0665f; }
+.suits .cl { color: #9fc7b2; }
+.suits .dm { color: #e0665f; }
+.title {
+  font-size: 76rpx; letter-spacing: 14rpx; font-weight: bold;
+  color: #e8c15a;
+  text-shadow: 0 4rpx 18rpx rgba(232,193,90,.35), 0 2rpx 0 rgba(120,86,20,.8);
+}
+.sub { color: #9fc7b2; letter-spacing: 6rpx; margin-top: 10rpx; font-size: 26rpx; }
+.tipRow { display: flex; justify-content: center; gap: 12rpx; margin-top: 18rpx; flex-wrap: wrap; }
+.tipChip {
+  font-size: 21rpx; color: #8fb8a3;
+  background: rgba(255,255,255,.05);
+  border: 2rpx solid rgba(46,122,88,.55);
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+}
+
+/* ---- 面板 ---- */
 .panel {
-  background: rgba(10,30,22,.85);
-  border: 2rpx solid #2e7a58;
-  border-radius: 24rpx;
-  padding: 30rpx;
-  margin-top: 24rpx;
-  box-shadow: 0 12rpx 40rpx rgba(0,0,0,.45);
+  background: linear-gradient(rgba(16,44,32,.92), rgba(9,26,19,.92));
+  border: 2rpx solid rgba(46,122,88,.75);
+  border-radius: 28rpx;
+  padding: 34rpx 30rpx;
+  margin-top: 26rpx;
+  box-shadow: 0 14rpx 44rpx rgba(0,0,0,.5), inset 0 2rpx 0 rgba(125,216,168,.12);
 }
 .secTitle {
   font-size: 28rpx; color: #e8c15a; font-weight: bold;
-  border-left: 8rpx solid #e8c15a; padding-left: 16rpx;
-  margin: 26rpx 0 16rpx;
+  display: flex; align-items: center; gap: 14rpx;
+  margin: 30rpx 0 16rpx;
 }
-.optRow { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.secTitle::before { content: ''; width: 8rpx; height: 28rpx; background: #e8c15a; border-radius: 4rpx; }
+
+/* ---- 玩法双卡片 ---- */
+.modeCards { display: flex; gap: 18rpx; }
+.mcard {
+  flex: 1;
+  background: rgba(255,255,255,.05);
+  border: 3rpx solid rgba(46,122,88,.6);
+  border-radius: 20rpx;
+  padding: 24rpx 12rpx;
+  text-align: center;
+  transition: all .15s;
+}
+.mcard.sel {
+  background: linear-gradient(rgba(61,155,109,.28), rgba(42,122,80,.22));
+  border-color: #e8c15a;
+  box-shadow: 0 0 18rpx rgba(232,193,90,.25);
+}
+.mIcon { font-size: 52rpx; line-height: 1.2; }
+.mName { font-size: 30rpx; font-weight: bold; color: #eef3ef; margin-top: 10rpx; }
+.mcard.sel .mName { color: #ffe9b0; }
+.mDesc { font-size: 21rpx; color: #8fb8a3; margin-top: 6rpx; }
+
+/* ---- 输入 ---- */
+.nickInput, .joinInput, .nameInput {
+  background: rgba(255,255,255,.07);
+  border: 2rpx solid rgba(46,122,88,.8);
+  color: #fff;
+  border-radius: 16rpx;
+  box-sizing: border-box;
+}
+.phc { color: #5f8a76; }
+.nickInput { padding: 20rpx 24rpx; font-size: 29rpx; width: 100%; }
+.joinInput { padding: 18rpx 20rpx; font-size: 34rpx; letter-spacing: 10rpx; text-align: center; flex: 1; }
+.nameInput { padding: 14rpx 18rpx; font-size: 26rpx; width: calc((100% - 24rpx) / 3); text-align: center; }
+.nameRow { display: flex; flex-wrap: wrap; gap: 12rpx; }
+
+/* ---- 主按钮 ---- */
+.btn.primary {
+  background: linear-gradient(#f0cf7a, #d8a93f);
+  border-color: #ffe9b0;
+  color: #4a3410;
+  font-weight: bold;
+  box-shadow: 0 8rpx 22rpx rgba(216,169,63,.3);
+}
+.createBtn { display: block; width: 100%; margin: 34rpx 0 0; font-size: 32rpx; padding: 22rpx 0; }
+
+/* ---- 分割线 ---- */
+.divider { display: flex; align-items: center; gap: 18rpx; margin: 30rpx 0; }
+.divider text { color: #6f9c88; font-size: 23rpx; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 2rpx; background: rgba(46,122,88,.5); }
+
+/* ---- 加入行 ---- */
+.joinRow { display: flex; gap: 14rpx; align-items: stretch; }
+.joinBtn { width: 180rpx; margin: 0; font-size: 30rpx; padding: 0; line-height: 2.6; }
+.modeDesc { font-size: 22rpx; color: #7ba28e; margin-top: 16rpx; text-align: center; }
+
+/* ---- 同屏热座 ---- */
+.segRow { display: flex; gap: 14rpx; }
 .opt {
+  flex: 1;
   background: rgba(255,255,255,.06);
-  border: 2rpx solid #2e7a58;
+  border: 2rpx solid rgba(46,122,88,.8);
   color: #d7eade;
-  padding: 14rpx 30rpx;
+  padding: 14rpx 0;
   border-radius: 14rpx;
   font-size: 27rpx;
   line-height: 1.4;
+  margin: 0;
 }
 .opt::after { border: none; }
 .opt.sel { background: linear-gradient(#3d9b6d, #2a7a50); border-color: #7dd8a8; color: #fff; font-weight: bold; }
-.modeDesc { font-size: 22rpx; color: #8fb8a3; margin-top: 12rpx; }
+.startBtn { display: block; margin: 40rpx auto 0; width: 80%; font-size: 32rpx; padding: 20rpx 0; }
+.ruleBtn { display: block; margin: 22rpx auto 0; width: 80%; }
+.foot { text-align: center; color: #6f9c88; font-size: 22rpx; margin: 30rpx 0 20rpx; }
 
-.nameRow { display: flex; flex-wrap: wrap; gap: 14rpx; }
-.nameInput {
-  background: rgba(255,255,255,.08);
-  border: 2rpx solid #2e7a58;
-  color: #fff;
-  padding: 12rpx 20rpx;
-  border-radius: 14rpx;
-  font-size: 26rpx;
-  width: 180rpx;
-}
-.nickInput {
-  background: rgba(255,255,255,.08);
-  border: 2rpx solid #2e7a58;
-  color: #fff;
-  padding: 14rpx 20rpx;
-  border-radius: 14rpx;
-  font-size: 28rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-.opt.big { font-size: 30rpx; padding: 18rpx 36rpx; }
-.joinRow { display: flex; gap: 14rpx; align-items: center; }
-.joinInput {
-  background: rgba(255,255,255,.08);
-  border: 2rpx solid #2e7a58;
-  color: #fff;
-  padding: 14rpx 20rpx;
-  border-radius: 14rpx;
-  font-size: 32rpx;
-  letter-spacing: 8rpx;
-  width: 220rpx;
-  text-align: center;
-}
-.startBtn { display: block; margin: 40rpx auto 0; width: 70%; font-size: 32rpx; }
-.ruleBtn { display: block; margin: 20rpx auto 0; width: 70%; }
-.foot { text-align: center; color: #6f9c88; font-size: 22rpx; margin-top: 30rpx; }
-
-/* 弹窗 */
+/* ===================== 弹窗 ===================== */
 .mroot {
   position: fixed; inset: 0; display: none;
   align-items: center; justify-content: center;
