@@ -211,7 +211,7 @@ function newGame(config) {
   S.logArr = [];
   log('游戏开始！一局共 3~5 次劫案，成功 3 次即胜利。', true);
 }
-function begin() { startHeist(); }
+function begin() { return startHeist(); }   // 返回 promise：调用方可捕获引擎异步异常（否则静默卡死）
 
 function drawCardId(deckIds) {
   if (deckIds.length === 0) {

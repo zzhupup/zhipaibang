@@ -84,22 +84,30 @@ function createHostUI(opts) {
       }
       if (target === 'all') {
         publicPrompt = { pid, title: o.title, body: o.body, actions: o.actions, target: 'all' };
-        localRace(o, pid);
-        return cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt))
-          .then(() => new Promise(res => { pending = { pid, target: 'all', resolve: res, done: false }; }));
+        // 关键：pending 必须同步先挂上——本机弹窗立即出现，房主可能比写库更快点击。
+        // 此前 pending 等写库完成后才赋值，快速点击会被丢弃 → 引擎永远等一个无人能回应的弹窗
+        // （表现为弹窗关掉后流程卡死：筹码不上桌、公共牌不翻）。
+        return new Promise(res => {
+          pending = { pid, target: 'all', resolve: res, done: false };
+          localRace(o, pid);
+          cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt))
+            .catch(err => console.error('[host] 公开弹窗写库失败（流程继续，等任一玩家回应）', err && (err.errMsg || err.message || err)));
+        });
       }
       // 指定某位玩家（私密弹窗）：正文走公开通道（所有人可见，与热座一致；
       // 底牌牌面 cards/reveal 只走私密通道发给本人）。此前正文只写 hands 文档，
       // 且目标玩家回复时 pid 取不到 → 房主永远等不到动作，表现为"弹窗不出现"
       publicPrompt = { pid, target, waitName: game.state.players[target].name, title: o.title, body: o.body, actions: o.actions };
-      const my = Promise.all([
-        cloudRoom.setHandPrompt(roomId, target, {
-          pid, title: o.title, body: o.body, actions: o.actions,
-          cards: o.cards || null, reveal: o.reveal || null,
-        }),
-        cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
-      ]);
-      return my.then(() => new Promise(res => { pending = { pid, target, resolve: res, done: false }; }));
+      return new Promise(res => {
+        pending = { pid, target, resolve: res, done: false };   // 同步先挂，理由同上
+        Promise.all([
+          cloudRoom.setHandPrompt(roomId, target, {
+            pid, title: o.title, body: o.body, actions: o.actions,
+            cards: o.cards || null, reveal: o.reveal || null,
+          }),
+          cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
+        ]).catch(err => console.error('[host] 私密弹窗写库失败（流程继续，等目标玩家回应）', err && (err.errMsg || err.message || err)));
+      });
     },
 
     /* 私密选底牌：写给第 i 位玩家 */
@@ -116,11 +124,13 @@ function createHostUI(opts) {
         return page.showPick(i, prompt, excludeCard);
       }
       publicPrompt = { pid, target: i, waitName: game.state.players[i].name };
-      const my = Promise.all([
-        cloudRoom.setHandPrompt(roomId, i, { pid, pickHole: true, prompt, cards }),
-        cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
-      ]);
-      return my.then(() => new Promise(res => { pending = { pid, target: i, resolve: res, done: false }; }));
+      return new Promise(res => {
+        pending = { pid, target: i, resolve: res, done: false };   // 同步先挂，理由同上
+        Promise.all([
+          cloudRoom.setHandPrompt(roomId, i, { pid, pickHole: true, prompt, cards }),
+          cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
+        ]).catch(err => console.error('[host] 选牌写库失败（流程继续，等目标玩家回应）', err && (err.errMsg || err.message || err)));
+      });
     },
 
     onGameOver: () => {

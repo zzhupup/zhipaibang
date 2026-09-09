@@ -70,7 +70,11 @@ Page({
         modal: o => this.showModal(o),
         pickHoleCard: (i, prompt, exclude) => this.showPick(i, prompt, exclude),
       });
-      game.begin();
+      // 引擎异步链兜底：任何未捕获异常都会中断流程（表现为筹码不上桌/弹窗消失），必须浮出
+      Promise.resolve(game.begin()).catch(e => {
+        console.error('[engine] 流程异常', e);
+        this.toast('流程异常：' + (e.message || e.errMsg || '未知错误'));
+      });
     } else if (this.mode === 'host') {
       cloudRoom.init();
       this._hb = cloudRoom.startHeartbeat(this.roomId, this.myPlayerId);   // 在线心跳
@@ -82,7 +86,10 @@ Page({
         });
         game.setUI(ui);
         this.watchFeed();
-        game.begin();
+        Promise.resolve(game.begin()).catch(e => {
+          console.error('[host] 引擎流程异常', e);
+          this.toast('流程异常：' + (e.message || e.errMsg || '未知错误'));
+        });
       }).catch(e => this.toast('初始化失败：' + (e.message || '')));
     } else {
       // 客人：只渲染 + 发送操作
