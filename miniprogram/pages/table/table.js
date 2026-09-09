@@ -94,11 +94,11 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '无声劫案 · 正在执行第' + this.data.heist + '次劫案！',
+      title: '筹码谜语 · 正在执行第' + this.data.heist + '次劫案！',
       path: '/pages/home/home',
     };
   },
-  onShareTimeline() { return { title: '无声劫案 · 合作扑克劫案' }; },
+  onShareTimeline() { return { title: '筹码谜语 · 合作扑克劫案' }; },
   toast(t) { wx.showToast({ title: t, icon: 'none' }); },
 
   /* ================================================================

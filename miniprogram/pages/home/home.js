@@ -23,12 +23,12 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '无声劫案 · 无言的配合，完美的劫案！3~6 人在线或同屏',
+      title: '筹码谜语 · 无言的配合，完美的劫案！3~6 人在线或同屏',
       path: '/pages/home/home',
     };
   },
   onShareTimeline() {
-    return { title: '无声劫案 · 合作扑克劫案' };
+    return { title: '筹码谜语 · 合作扑克劫案' };
   },
 
   pickPlay(e) { this.setData({ playMode: e.currentTarget.dataset.v }); },

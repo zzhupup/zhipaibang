@@ -28,7 +28,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: `来无声劫案！房间号 ${this.data.roomId}，输入加入对局`,
+      title: `来筹码谜语！房间号 ${this.data.roomId}，输入加入对局`,
       path: '/pages/home/home?joinCode=' + this.data.roomId,
     };
   },
