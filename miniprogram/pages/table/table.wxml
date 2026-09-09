@@ -95,7 +95,7 @@
   <block wx:if="{{layout==='round'}}">
     <view class="stageWrap" style="width:{{stageW}}px;height:{{stageH}}px">
       <view class="stage" style="width:{{stageW}}px;height:{{stageH}}px;transform:scale({{scale}})">
-        <view class="roundTable"><view class="feltMark">筹 码 谜 语</view></view>
+        <view class="roundTable"><view class="feltMark">筹 码 密 语</view></view>
         <view class="centerArea">
           <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase}}"/>
         </view>
@@ -110,7 +110,7 @@
   <block wx:else>
     <scroll-view scroll-y class="stackScroll">
       <view class="feltPanel">
-        <view class="feltMarkM">筹 码 谜 语</view>
+        <view class="feltMarkM">筹 码 密 语</view>
         <template is="tCenter" data="{{communityViews, deckCount, discardCount, centerChips, phase}}"/>
       </view>
       <view class="seatGrid">
