@@ -89,9 +89,9 @@ Page({
         this.setData({ players: list, mySeat: me ? me.seat : this.data.mySeat });
       }
     };
-    cloudRoom.listPlayers(this.roomId).then(applyList).catch(err => console.warn('[room] 拉取玩家列表失败', err));
-    // 实时监听后续增减
-    this.watcher = cloudRoom.watchPlayers(this.roomId, list => {
+    cloudRoom.listPlayers(this.roomId, this.myPlayerId).then(applyList).catch(err => console.warn('[room] 拉取玩家列表失败', err));
+    // 实时监听后续增减（传 myId：用心跳自动校准本机时钟，防时钟偏差误过滤他人）
+    this.watcher = cloudRoom.watchPlayers(this.roomId, this.myPlayerId, list => {
       applyList(list);
     }, e => { console.warn('[room] players watch 错误', e); this.setData({ error: '实时连接中断，请重进' }); });
     // 房间状态（开局后自动进入牌桌；文档被删 = 房间解散）

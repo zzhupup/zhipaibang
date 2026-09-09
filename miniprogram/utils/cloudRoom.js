@@ -36,8 +36,9 @@ async function createRoom(name) {
     } catch (e) { /* 不存在则继续 */ break; }
   }
   // 先建玩家文档拿到 playerId；房间文档记录 hostPid（房主离开时据此转交）
-  // lastSeen = 在线心跳标记（历史残留文档无此字段，会被列表过滤）
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now(), lastSeen: Date.now() } });
+  // lastSeen = 在线心跳标记，用**服务端时间**（serverDate）写入：
+  // 各手机本地时钟偏差可达数分钟，用本地时间会让"时钟快的手机"把所有人都判为离线
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now(), lastSeen: db.command.serverDate() } });
   await db.collection('rooms').doc(code).set({
     data: {
       status: 'lobby',
@@ -56,22 +57,42 @@ async function joinRoom(code, name) {
   const doc = await db.collection('rooms').doc(code).get();
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
-  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: Date.now() } });
+  const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: db.command.serverDate() } });
   return { roomId: code, playerId: p._id };
 }
 
 /* ---------- 玩家列表（按加入时间排序 → 座位号；只保留 45 秒内有心跳的在线玩家） ---------- */
 const ONLINE_MS = 45000;
-function onlineFilter(d) {
-  return d.lastSeen && Date.now() - d.lastSeen <= ONLINE_MS;
+/* serverDate 写入后客户端读到的是 Date 对象（兼容数字） */
+function normTime(v) { return v instanceof Date ? v.getTime() : +v; }
+/* 本机时钟与服务器时钟的偏差（毫秒）。
+   判断"谁在线"必须用服务器时间轴：lastSeen 由 serverDate 写入，
+   而本机 Date.now() 可能快/慢几分钟——偏差不校准，时钟快的手机
+   会把所有其他玩家误判为离线（表现为"看不到其他玩家列表"）。
+   校准方式：从自己的玩家文档读回 lastSeen（服务端时间），
+   clockOffset = 本机当前时间 - 服务器时间。 */
+let clockOffset = 0;
+function calibratedNow() { return Date.now() - clockOffset; }
+function calibrateFromOwnDoc(docs, myId) {
+  if (!myId || !docs) return;
+  const mine = docs.find(d => d._id === myId);
+  if (mine && mine.lastSeen) {
+    const srv = normTime(mine.lastSeen);
+    if (srv > 0) clockOffset = Date.now() - srv;
+  }
 }
-async function listPlayers(roomId) {
+function onlineFilter(d) {
+  if (!d.lastSeen) return false;
+  return calibratedNow() - normTime(d.lastSeen) <= ONLINE_MS;
+}
+async function listPlayers(roomId, myId) {
   // 关键：必须倒序取"最新 50 条"再过滤——正序 limit 会取到最早的文档，
   // 被历史垃圾挤占后当前在线玩家的文档直接被截掉（曾导致发牌名单缺人）
   const res = await db.collection('players').where({ roomId }).orderBy('created', 'desc').limit(50).get();
+  calibrateFromOwnDoc(res.data, myId);   // 顺手用自己文档校准时钟（误差 ≤ 心跳周期，可忽略）
   return res.data.filter(onlineFilter)
     .sort((a, b) => a.created - b.created)
-    .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: d.lastSeen }));
+    .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: normTime(d.lastSeen) }));
 }
 
 /* ---------- 在线心跳：每 5 秒刷新自己的 lastSeen ----------
@@ -80,7 +101,7 @@ async function listPlayers(roomId) {
 function startHeartbeat(roomId, playerId) {
   if (!roomId || !playerId || !db) return { stop() {} };
   const tick = () => db.collection('players').doc(playerId)
-    .update({ data: { lastSeen: Date.now() } }).catch(() => {});
+    .update({ data: { lastSeen: db.command.serverDate() } }).catch(() => {});
   tick();
   const timer = setInterval(tick, 5000);
   return { stop() { clearInterval(timer); } };
@@ -168,20 +189,22 @@ function watchRoom(roomId, cb, onError) {
     }
   );
 }
-/* ---------- 玩家列表监听（大厅，只推 45 秒内有心跳的在线玩家） ---------- */
-function watchPlayers(roomId, cb, onError) {
+/* ---------- 玩家列表监听（大厅，只推 45 秒内有心跳的在线玩家）
+   myId：本人玩家文档 _id —— 用于从自己的心跳自动校准本机时钟偏差 */
+function watchPlayers(roomId, myId, cb, onError) {
   return watchWithRetry(
     (ok, fail) => db.collection('players').where({ roomId }).watch({
       onChange: snap => {
+        calibrateFromOwnDoc(snap.docs, myId);
         const list = (snap.docs || []).filter(onlineFilter)
           .sort((a, b) => a.created - b.created)
-          .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: d.lastSeen }));
+          .map((d, i) => ({ id: d._id, openid: d._openid, name: d.name, seat: i, lastSeen: normTime(d.lastSeen) }));
         ok(list);
       },
       onError: fail,
     }),
     cb, onError, 20,
-    () => listPlayers(roomId)
+    () => listPlayers(roomId, myId)
   );
 }
 /* ---------- 本人私密文档监听 ---------- */
