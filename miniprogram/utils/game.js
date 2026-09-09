@@ -52,6 +52,7 @@ const S = {
   chalDeck: [], expDeck: [],
   activeChallenge: null, activeExpert: null,
   lastHeistResult: null,
+  showdownRows: null,   // 摊牌结果板（全员同屏）
   logArr: [],
 };
 
@@ -199,6 +200,7 @@ function newGame(config) {
   S.expDeck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   S.activeChallenge = null; S.activeExpert = null;
   S.lastHeistResult = null;
+  S.showdownRows = null;
   S.logArr = [];
   log('游戏开始！一局共 3~5 次劫案，成功 3 次即胜利。', true);
 }
@@ -569,89 +571,69 @@ async function showdown() {
   log(`摊牌顺序（红筹码升序）：${order.map(o => `${o.p.name}(${o.p.chips.red.star}星)`).join(' → ')}`, true);
   await ui.modal({
     title: '🃏 摊牌 — 公布真相',
-    body: `按红色筹码星数<b>从小到大</b>依次展示：<br>${order.map(o => `${o.p.chips.red.star}星 → ${o.p.name}`).join('<br>')}<br><br>每位玩家展示底牌并公布自己能凑成的<b>最强五张</b>牌型。每张翻开的牌不得弱于上一位（完全打平可以）！`,
+    body: `按红色筹码星数<b>从小到大</b>全员同屏亮牌：每人展示自己能凑成的<b>最强五张</b>牌型，序号正确的打钩、弱于上一位的打叉。完全打平也算过！`,
     actions: [{ label: '开始摊牌' }]
   });
 
-  const maxRedStar = order[order.length - 1].p.chips.red.star;
-  let prev = null;
-  for (const o of order) {
-    const p = o.p, i = o.i;
-    const isMaxRed = p.chips.red.star === maxRedStar;
-
-    if (isMaxRed && S.activeChallenge === 4) {
-      const guess = await ui.modal({
-        title: '🚨 虹膜验证',
-        body: `在 <b>${p.name}</b> 展示手牌之前，其余玩家共同商讨并猜测他的一张底牌数值（他不能参与、不能提示）：`,
-        actions: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(r => ({ label: RANK_TXT[r], value: r }))
-      });
-      const hit = p.hole.some(c => c.r === guess);
-      if (!hit) {
-        log(`虹膜验证失败：其余玩家猜 ${RANK_TXT[guess]}，${p.name} 的底牌中没有！`, true);
-        return heistEnd(false, `虹膜验证失败——其余玩家猜测的数值（${RANK_TXT[guess]}）不在 ${p.name} 的底牌中。无论筹码排序是否正确，本次劫案视为失败！`);
-      }
-      log(`虹膜验证通过：${p.name} 的底牌中确有 ${RANK_TXT[guess]}。`, true);
-      await ui.modal({ title: '✅ 虹膜验证通过', body: `${p.name} 的底牌中确实有一张 <b>${RANK_TXT[guess]}</b>！继续摊牌。`, actions: [{ label: '继续' }] });
-    }
-    if (isMaxRed && S.activeChallenge === 9) {
-      const guess = await ui.modal({
-        title: '🚨 指纹比对',
-        body: `在 <b>${p.name}</b> 展示手牌之前，其余玩家共同商讨并猜测他的<b>牌型</b>（他不能参与、不能提示）：`,
-        actions: HAND_NAMES.map((h, k) => ({ label: h, value: k }))
-      });
-      const b = best5([...p.hole, ...S.community], p.striker);
-      const real = b.score[0];
-      if (guess !== real) {
-        log(`指纹比对失败：其余玩家猜「${HAND_NAMES[guess]}」，实际是「${HAND_NAMES[real]}」。`, true);
-        return heistEnd(false, `指纹比对失败——其余玩家猜测的牌型是「${HAND_NAMES[guess]}」，但实际是「<b>${HAND_NAMES[real]}</b>」。本次劫案视为失败！`);
-      }
-      log(`指纹比对通过：牌型确实是「${HAND_NAMES[real]}」。`, true);
-      await ui.modal({ title: '✅ 指纹比对通过', body: `猜测正确！${p.name} 的牌型确实是 <b>${HAND_NAMES[real]}</b>。继续摊牌。`, actions: [{ label: '继续' }] });
-    }
-
-    await ui.modal({
-      title: `轮到 ${p.name} 摊牌`,
-      body: privWarn('') + `请 ${p.name} 准备亮牌，其他玩家围观！`,
-      actions: [{ label: '亮牌！', value: 1 }]
+  /* 挑战牌：在亮牌前对红筹码最多者发起验证（不能先看到牌面） */
+  const maxO = order[order.length - 1];
+  if (S.activeChallenge === 4) {
+    const guess = await ui.modal({
+      title: '🚨 虹膜验证',
+      body: `在亮牌之前，其余玩家共同商讨并猜测 <b>${maxO.p.name}</b> 的一张底牌数值（他不能参与、不能提示）：`,
+      actions: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(r => ({ label: RANK_TXT[r], value: r }))
     });
-    const all = [...p.hole, ...S.community];
-    const b = best5(all, p.striker);
-    let cmpHtml = '';
-    if (prev) {
-      const c = cmpReveal(prev, b);
-      if (c >= 0) {
-        cmpHtml = `<div style="margin-top:12rpx"><span style="font-size:26rpx;padding:6rpx 20rpx;border-radius:10rpx;background:rgba(61,155,109,.3);color:#8fe6b4;border:2rpx solid #57c48f;font-weight:bold">✔ 不弱于上一位（${handName(prev.score)}）</span></div>`;
-      } else {
-        await ui.modal({
-        title: '💥 摊牌错误！',
-        body: `<b>${p.name}</b> 的牌型（<b>${handName(b.score)}</b>）弱于上一位（<b>${handName(prev.score)}</b>）——筹码分配顺序出现错误！<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`,
-        reveal: {
-          holeFaces: facesWithHl(p.hole, b.cards),
-          communityFaces: facesWithHl(S.community, b.cards),
-        },
-        player: i,   // 联机：完整牌面只发给本人，其他人只看到牌型名
-        actions: [{ label: '唉…接受失败' }]
-      });
-        log(`${p.name} 的牌型 ${handName(b.score)} 弱于上一位的 ${handName(prev.score)}，劫案失败！`, true);
-        return heistEnd(false, `<b>${p.name}</b> 展示的牌型「${handName(b.score)}」弱于上一位的「${handName(prev.score)}」。你们没有正确安排分工，一张警报牌翻至红色面！`);
-      }
+    const hit = maxO.p.hole.some(c => c.r === guess);
+    if (!hit) {
+      log(`虹膜验证失败：其余玩家猜 ${RANK_TXT[guess]}，${maxO.p.name} 的底牌中没有！`, true);
+      return heistEnd(false, `虹膜验证失败——其余玩家猜测的数值（${RANK_TXT[guess]}）不在 ${maxO.p.name} 的底牌中。无论筹码排序是否正确，本次劫案视为失败！`);
     }
-    const firstTag = !prev ? '<div style="margin-top:12rpx"><span style="font-size:26rpx;padding:6rpx 20rpx;border-radius:10rpx;background:rgba(61,155,109,.3);color:#8fe6b4;border:2rpx solid #57c48f;font-weight:bold">✔ 第一位展示，无比较对象</span></div>' : '';
-    await ui.modal({
-      title: `${p.name} 的牌型`,
-      body: `<div style="font-size:30rpx;margin-top:8rpx">最强五张牌型：<b style="color:#e8c15a">${handName(b.score)}</b>${p.striker ? ' <span style="font-size:24rpx;color:#ffb3ae">👊 镇场老大</span>' : ''}</div>` +
-        `<div style="font-size:23rpx;color:#8fb8a3;margin-top:4rpx">（金色描边的牌为参与比较的牌型组成）</div>${cmpHtml}${firstTag}`,
-      reveal: {
-        holeFaces: facesWithHl(p.hole, b.cards),
-        communityFaces: facesWithHl(S.community, b.cards),
-      },
-      player: i,     // 联机：底牌牌面只发本人，其他人只看到公开的牌型名
-      actions: [{ label: '下一位' }]
-    });
-    log(`${p.name} 展示：${handName(b.score)}${prev ? `（对比 ${handName(prev.score)}：${cmpReveal(prev, b) >= 0 ? '通过' : '失败'}）` : ''}`);
-    prev = { ...b, name: p.name };
+    log(`虹膜验证通过：${maxO.p.name} 的底牌中确有 ${RANK_TXT[guess]}。`, true);
+    await ui.modal({ title: '✅ 虹膜验证通过', body: `${maxO.p.name} 的底牌中确实有一张 <b>${RANK_TXT[guess]}</b>！继续摊牌。`, actions: [{ label: '继续' }] });
   }
-  heistEnd(true);
+  if (S.activeChallenge === 9) {
+    const guess = await ui.modal({
+      title: '🚨 指纹比对',
+      body: `在亮牌之前，其余玩家共同商讨并猜测 <b>${maxO.p.name}</b> 的<b>牌型</b>（他不能参与、不能提示）：`,
+      actions: HAND_NAMES.map((h, k) => ({ label: h, value: k }))
+    });
+    const bmax = best5([...maxO.p.hole, ...S.community], maxO.p.striker);
+    const real = bmax.score[0];
+    if (guess !== real) {
+      log(`指纹比对失败：其余玩家猜「${HAND_NAMES[guess]}」，实际是「${HAND_NAMES[real]}」。`, true);
+      return heistEnd(false, `指纹比对失败——其余玩家猜测的牌型是「${HAND_NAMES[guess]}」，但实际是「<b>${HAND_NAMES[real]}</b>」。本次劫案视为失败！`);
+    }
+    log(`指纹比对通过：牌型确实是「${HAND_NAMES[real]}」。`, true);
+    await ui.modal({ title: '✅ 指纹比对通过', body: `猜测正确！${maxO.p.name} 的牌型确实是 <b>${HAND_NAMES[real]}</b>。继续摊牌。`, actions: [{ label: '继续' }] });
+  }
+
+  /* 全员同屏结果板：按红筹码星数升序，逐行计算是否弱于上一位 */
+  let prev = null, firstFail = null;
+  const rows = order.map((o, idx) => {
+    const p = o.p;
+    const b = best5([...p.hole, ...S.community], p.striker);
+    const ok = !prev || cmpReveal(prev, b) >= 0;
+    if (!ok && !firstFail) firstFail = `${p.name} 的牌型「${handName(b.score)}」弱于上一位的「${handName(prev.score)}」——筹码分配顺序出现错误！`;
+    log(`${p.name} 展示：${handName(b.score)}${prev ? `（对比 ${handName(prev.score)}：${ok ? '通过' : '失败'}）` : ''}`);
+    prev = { ...b, name: p.name };
+    return {
+      seq: idx + 1, name: p.name, star: p.chips.red.star, striker: p.striker,
+      hand: handName(b.score), ok,
+      holeFaces: facesWithHl(p.hole, b.cards),
+      communityFaces: facesWithHl(S.community, b.cards),
+    };
+  });
+  S.showdownRows = rows;
+  ui.render();   // 三种模式同步渲染结果板（联机经快照广播给所有玩家）
+
+  await ui.modal({
+    title: firstFail ? '💥 摊牌错误！' : '✅ 摊牌通过！',
+    body: firstFail
+      ? `${firstFail}<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`
+      : `全员顺序正确，配合完美！`,
+    actions: [{ label: '继续结算' }]
+  });
+  heistEnd(!firstFail, firstFail ? `<b>${firstFail}</b><br>你们没有正确安排分工，一张警报牌翻至红色面！` : '');
 }
 
 /* ---------------- 劫案结算 ---------------- */
@@ -706,6 +688,7 @@ function getSnapshot() {
     phase: S.phase,
     community: S.community.map(poker.cardFace),
     communityRaw: S.community,   // 原始 {r,s} 牌：客户端本地算"当前牌型"用（cardFace 视图无 r/s 字段）
+    showdownRows: S.showdownRows || null,   // 摊牌结果板（全员同屏，明牌设计无需保密）
     deckCount: S.deck.length,
     discardCount: S.discard.length,
     centerChips: [...S.centerChips].sort((a, b) => a - b),

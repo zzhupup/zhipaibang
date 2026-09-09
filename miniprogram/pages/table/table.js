@@ -197,6 +197,7 @@ Page({
       seats, mode: s.mode, n: s.n,
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
       pillText: this.buildPill(s),
+      showdownBoard: s.showdownRows || null,   // 摊牌结果板（全员同屏，三种模式共用）
     });
   },
   buildPill(s) {

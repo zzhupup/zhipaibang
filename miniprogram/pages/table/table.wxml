@@ -189,6 +189,29 @@
   </view>
 </view>
 
+<!-- 摊牌结果板：全员同屏（三种模式共用），按红筹码星数升序，正确打钩/错误打叉 -->
+<view class="mroot {{showdownBoard?'show':''}}" wx:if="{{showdownBoard}}">
+  <view class="mbox sdBoard" catchtap="noop">
+    <view class="mtitle">🃏 摊牌 — 全员底牌公布</view>
+    <scroll-view scroll-y class="sdList">
+      <view wx:for="{{showdownBoard}}" wx:key="seq" class="sdRow">
+        <view class="sdSeq">{{index + 1}}</view>
+        <view class="sdStar">{{item.star}}星</view>
+        <view class="sdInfo">
+          <view class="sdName">{{item.name}}{{item.striker ? ' 👊' : ''}}<text class="sdHand">{{item.hand}}</text></view>
+          <view class="sdCards">
+            <template wx:for="{{item.holeFaces}}" wx:for-item="f" wx:key="index" is="tCard" data="{{f}}"/>
+            <text class="sdPlus">＋</text>
+            <template wx:for="{{item.communityFaces}}" wx:for-item="f" wx:key="index" is="tCard" data="{{f}}"/>
+          </view>
+        </view>
+        <view class="sdMark {{item.ok ? 'ok' : 'bad'}}">{{item.ok ? '✓' : '✗'}}</view>
+      </view>
+    </scroll-view>
+    <view class="sdHint">按红筹码星数升序排列 · 金边牌为最强五张组成 · ✓ 顺序正确 ✗ 弱于上一位</view>
+  </view>
+</view>
+
 <!-- 客人：私密选牌弹层 -->
 <view class="mroot {{guestPick?'show':''}}">
   <view class="mbox" wx:if="{{guestPick}}" catchtap="noop">
