@@ -30,18 +30,18 @@
 
     <!-- 在线联机 -->
     <block wx:if="{{playMode==='online'}}">
-      <view class="secTitle">你的昵称</view>
-      <input class="nickInput" placeholder="给自己起个代号" placeholder-class="phc"
-        maxlength="8" value="{{nick}}" bindinput="onNick" />
+      <view class="nickRow">
+        <view class="secTitle">你的昵称</view>
+        <input class="nickInput" placeholder="给自己起个代号" placeholder-class="phc"
+          maxlength="8" value="{{nick}}" bindinput="onNick" />
+      </view>
 
       <button class="btn primary createBtn" bindtap="goRoom" data-v="create">🏠 创建房间</button>
-
-      <view class="divider"><text>或加入好友</text></view>
 
       <view class="joinRow">
         <input class="joinInput" type="number" maxlength="6" placeholder="房间号"
           placeholder-class="phc" value="{{joinCode}}" bindinput="onJoinCode" />
-        <button class="btn joinBtn" bindtap="goRoom" data-v="join">加入</button>
+        <button class="btn joinBtn" bindtap="goRoom" data-v="join">加入房间</button>
       </view>
       <view class="modeDesc">好友通过 6 位房间号或微信分享卡片加入</view>
     </block>
