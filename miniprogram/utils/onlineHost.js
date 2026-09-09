@@ -69,7 +69,7 @@ function createHostUI(opts) {
       const snap = withPrompt(game.getSnapshot(), publicPrompt);
       try { await cloudRoom.updateRoomPublic(roomId, snap); } catch (e) {}
       try { await cloudRoom.writeHands(roomId, game.state.players, players.map(p => p.openid)); } catch (e) {}
-      page.syncFromSnapshot(snap);
+      page.sync(snap);
     },
 
     /* 弹窗：o.player 缺省 = 全员 */

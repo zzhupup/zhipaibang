@@ -42,7 +42,7 @@ async function createRoom(name) {
       hostOpenid: openid,
       hostName: name || '房主',
       createdAt: Date.now(),
-      public: null,
+      public: {},
     }
   });
   await db.collection('players').add({ data: { roomId: code, name: name || '房主', created: Date.now() } });
@@ -97,8 +97,9 @@ function watchHand(roomId, seat, cb, onError) {
 
 /* ---------- 房主写公开快照 ---------- */
 async function updateRoomPublic(roomId, snap) {
+  const _ = db.command;
   await db.collection('rooms').doc(roomId).update({
-    data: { public: snap, updatedAt: Date.now() },
+    data: { public: _.set(snap), updatedAt: Date.now() },
   });
 }
 async function updateRoom(roomId, data) {
