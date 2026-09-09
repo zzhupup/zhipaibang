@@ -311,26 +311,36 @@
 
 /* ---------- 摊牌结果板（全员同屏） ---------- */
 .sdBoard { width: 92%; max-width: 680rpx; }
-.sdList { max-height: 60vh; margin: 10rpx 0 6rpx; }
+.sdVerdict { margin: 8rpx 0 4rpx; padding: 12rpx 16rpx; border-radius: 12rpx; font-size: 24rpx; line-height: 1.5; }
+.sdVerdict.ok { background: rgba(61,155,109,.22); color: #8fe6b4; border: 2rpx solid #57c48f; }
+.sdVerdict.bad { background: rgba(214,69,65,.22); color: #ffb3ae; border: 2rpx solid #d64541; }
+.sdList { max-height: 56vh; margin: 8rpx 0 4rpx; }
 .sdRow {
-  display: flex; align-items: center; gap: 12rpx;
   background: rgba(20,50,38,.55); border: 2rpx solid rgba(46,122,88,.45);
-  border-radius: 14rpx; padding: 14rpx 16rpx; margin-bottom: 14rpx;
+  border-radius: 14rpx; padding: 12rpx 16rpx; margin-bottom: 12rpx;
 }
+.sdHead { display: flex; align-items: center; gap: 10rpx; }
 .sdSeq {
-  flex: none; width: 44rpx; height: 44rpx; line-height: 44rpx; text-align: center;
-  border-radius: 50%; background: #2e7a58; color: #fff; font-size: 26rpx; font-weight: bold;
+  flex: none; width: 40rpx; height: 40rpx; line-height: 40rpx; text-align: center;
+  border-radius: 50%; background: #2e7a58; color: #fff; font-size: 24rpx; font-weight: bold;
 }
 .sdStar {
-  flex: none; padding: 6rpx 14rpx; border-radius: 10rpx; font-size: 24rpx; font-weight: bold;
+  flex: none; padding: 4rpx 12rpx; border-radius: 10rpx; font-size: 22rpx; font-weight: bold;
   background: rgba(200,53,46,.25); color: #ffb3ae; border: 2rpx solid #c8352e;
 }
-.sdInfo { flex: 1; min-width: 0; }
-.sdName { font-size: 27rpx; color: #ffe9b0; font-weight: bold; }
-.sdHand { color: #e8c15a; font-size: 24rpx; margin-left: 10rpx; font-weight: normal; }
-.sdCards { display: flex; flex-wrap: wrap; align-items: center; gap: 4rpx; margin-top: 8rpx; }
-.sdPlus { color: #8fb8a3; font-size: 24rpx; margin: 0 4rpx; }
-.sdMark { flex: none; width: 52rpx; height: 52rpx; line-height: 52rpx; text-align: center; border-radius: 50%; font-size: 34rpx; font-weight: bold; }
+.sdName { flex: 1; min-width: 0; font-size: 26rpx; color: #ffe9b0; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sdHand { color: #e8c15a; font-size: 23rpx; margin-left: 8rpx; font-weight: normal; }
+.sdCardsRow { display: flex; align-items: center; gap: 4rpx; margin-top: 8rpx; }
+.sdLbl { flex: none; width: 54rpx; color: #8fb8a3; font-size: 20rpx; }
+.sdMark { flex: none; width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border-radius: 50%; font-size: 30rpx; font-weight: bold; }
 .sdMark.ok { background: rgba(61,155,109,.3); color: #8fe6b4; border: 3rpx solid #57c48f; }
 .sdMark.bad { background: rgba(214,69,65,.28); color: #ffb3ae; border: 3rpx solid #d64541; }
-.sdHint { text-align: center; color: #8fb8a3; font-size: 22rpx; padding: 6rpx 0 4rpx; }
+.sdHint { text-align: center; color: #8fb8a3; font-size: 21rpx; padding: 4rpx 0; }
+.sdDoneRow { display: flex; justify-content: center; align-items: center; padding: 8rpx 0 4rpx; min-height: 70rpx; }
+.sdDone {
+  margin: 0; width: 340rpx; font-size: 30rpx; font-weight: bold; line-height: 2.1;
+  border-radius: 14rpx; background: #3d9b6d; color: #fff; border: 2rpx solid #57c48f;
+  box-shadow: 0 4rpx 12rpx rgba(61,155,109,.4);
+}
+.sdDone::after { border: none; }
+.sdWait { color: #8fb8a3; font-size: 24rpx; }

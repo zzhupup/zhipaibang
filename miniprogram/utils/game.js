@@ -42,6 +42,7 @@ const EXPERTS = {
 };
 
 let ui = null;   // { render, modal, pickHoleCard }
+let boardResolve = null;   // 摊牌结果板"完成"放行句柄
 const S = {
   mode: 'standard', n: 3, names: [],
   players: [], deck: [], discard: [], community: [],
@@ -53,6 +54,7 @@ const S = {
   activeChallenge: null, activeExpert: null,
   lastHeistResult: null,
   showdownRows: null,   // 摊牌结果板（全员同屏）
+  boardGate: null,      // 结果板结算门 { fail }：等"完成"按钮放行
   logArr: [],
 };
 
@@ -201,6 +203,7 @@ function newGame(config) {
   S.activeChallenge = null; S.activeExpert = null;
   S.lastHeistResult = null;
   S.showdownRows = null;
+  S.boardGate = null; boardResolve = null;
   S.logArr = [];
   log('游戏开始！一局共 3~5 次劫案，成功 3 次即胜利。', true);
 }
@@ -624,21 +627,25 @@ async function showdown() {
     };
   });
   S.showdownRows = rows;
+  S.boardGate = { fail: firstFail };   // 结果板常驻，等"完成"按钮驱动结算
   ui.render();   // 三种模式同步渲染结果板（联机经快照广播给所有玩家）
 
-  await ui.modal({
-    title: firstFail ? '💥 摊牌错误！' : '✅ 摊牌通过！',
-    body: firstFail
-      ? `${firstFail}<div style="margin-top:10rpx">一张警报牌翻至红色面，本次劫案失败。</div>`
-      : `全员顺序正确，配合完美！`,
-    actions: [{ label: '继续结算' }]
-  });
+  await new Promise(res => { boardResolve = res; });   // 房主/单机点"完成"后放行
   heistEnd(!firstFail, firstFail ? `<b>${firstFail}</b><br>你们没有正确安排分工，一张警报牌翻至红色面！` : '');
+}
+
+/* 结果板"完成"按钮放行（仅房主/单机调用；联机客人无权结算） */
+function resolveBoard() {
+  if (!boardResolve) return;
+  const r = boardResolve; boardResolve = null;
+  r();
 }
 
 /* ---------------- 劫案结算 ---------------- */
 async function heistEnd(success, failReason) {
   S.phase = 'idle';
+  S.showdownRows = null;   // 收起全员摊牌结果板
+  S.boardGate = null;
   S.lastHeistResult = success;
   if (success) {
     S.vaults++;
@@ -689,6 +696,7 @@ function getSnapshot() {
     community: S.community.map(poker.cardFace),
     communityRaw: S.community,   // 原始 {r,s} 牌：客户端本地算"当前牌型"用（cardFace 视图无 r/s 字段）
     showdownRows: S.showdownRows || null,   // 摊牌结果板（全员同屏，明牌设计无需保密）
+    boardGate: S.boardGate || null,         // 结果板结算门（客人据此显示"等待房主结算"）
     deckCount: S.deck.length,
     discardCount: S.discard.length,
     centerChips: [...S.centerChips].sort((a, b) => a - b),
@@ -713,7 +721,7 @@ function getSnapshot() {
 }
 
 module.exports = {
-  setUI, newGame, begin, getSnapshot,
+  setUI, newGame, begin, getSnapshot, resolveBoard,
   takeCenter, takeFromPlayer, returnChip, confirmPlayer,
   doTakeCenter, doTakeFrom,
   peekPlayer, showRules, showLog, showRoundInfo,

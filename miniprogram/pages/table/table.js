@@ -198,6 +198,7 @@ Page({
       challengeName: s.activeChallenge || '', expertName: s.activeExpert || '',
       pillText: this.buildPill(s),
       showdownBoard: s.showdownRows || null,   // 摊牌结果板（全员同屏，三种模式共用）
+      boardGate: s.boardGate || null,          // 结算门：完成按钮 / 等待提示
     });
   },
   buildPill(s) {
@@ -259,6 +260,12 @@ Page({
   /* ================================================================
      桌面交互
      ================================================================ */
+  /* 摊牌结果板"完成"：单机/房主放行结算（未满3金库/3警报→下一劫案；已满→胜负+再来一局/退出房间） */
+  onBoardDone() {
+    if (this.mode === 'guest') { this.toast('只有房主可以结算'); return; }
+    game.resolveBoard();
+  },
+
   onCenterChip(e) {
     const star = +e.currentTarget.dataset.star;
     if (this.mode === 'guest') {

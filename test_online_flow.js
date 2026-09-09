@@ -76,6 +76,17 @@ const T = (n, c) => c ? (pass++, console.log('OK  ', n)) : (fail++, console.log(
     const snap = store.rooms['888888'].public;
     if (!snap) continue;
 
+    // 摊牌结果板：模拟房主点"完成"放行结算（引擎等 resolveBoard）
+    if (snap.showdownRows) {
+      if (!page._boardDone) {
+        page._boardDone = true;
+        T('摊牌结果板随公开快照广播（含 ✓/✗ 标记）', snap.showdownRows.every(r => typeof r.ok === 'boolean') && !!snap.boardGate);
+        game.resolveBoard();
+      }
+      continue;
+    }
+    page._boardDone = false;
+
     // 底牌已发放确认（第一个全员弹窗）→ 之后每轮每人拿筹码+确认
     if (snap.prompt && snap.prompt.target === 'all') {
       const pid = snap.prompt.pid;

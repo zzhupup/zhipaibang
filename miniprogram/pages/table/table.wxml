@@ -31,6 +31,15 @@
     </view>
   </template>
 
+  <!-- 模板：超小牌（摊牌结果板用） -->
+  <template name="tCardT">
+    <view class="pcard tiny {{f.red?'red':''}} {{f.knight?'knight':''}} {{f.hl?'hl2':''}}">
+      <view class="corner"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+      <view class="pip">{{f.suit}}</view>
+      <view class="corner br"><text>{{f.label}}</text><text>{{f.suit}}</text></view>
+    </view>
+  </template>
+
   <!-- 模板：中央区（公共牌 + 牌堆 + 中央筹码） -->
   <template name="tCenter">
     <view class="communityRow">
@@ -193,22 +202,30 @@
 <view class="mroot {{showdownBoard?'show':''}}" wx:if="{{showdownBoard}}">
   <view class="mbox sdBoard" catchtap="noop">
     <view class="mtitle">🃏 摊牌 — 全员底牌公布</view>
+    <view wx:if="{{boardGate}}" class="sdVerdict {{boardGate.fail?'bad':'ok'}}">{{boardGate.fail ? '💥 ' + boardGate.fail : '✅ 全员顺序正确，配合完美！'}}</view>
     <scroll-view scroll-y class="sdList">
       <view wx:for="{{showdownBoard}}" wx:key="seq" class="sdRow">
-        <view class="sdSeq">{{index + 1}}</view>
-        <view class="sdStar">{{item.star}}星</view>
-        <view class="sdInfo">
+        <view class="sdHead">
+          <view class="sdSeq">{{index + 1}}</view>
+          <view class="sdStar">{{item.star}}星</view>
           <view class="sdName">{{item.name}}{{item.striker ? ' 👊' : ''}}<text class="sdHand">{{item.hand}}</text></view>
-          <view class="sdCards">
-            <template wx:for="{{item.holeFaces}}" wx:for-item="f" wx:key="index" is="tCard" data="{{f}}"/>
-            <text class="sdPlus">＋</text>
-            <template wx:for="{{item.communityFaces}}" wx:for-item="f" wx:key="index" is="tCard" data="{{f}}"/>
-          </view>
+          <view class="sdMark {{item.ok ? 'ok' : 'bad'}}">{{item.ok ? '✓' : '✗'}}</view>
         </view>
-        <view class="sdMark {{item.ok ? 'ok' : 'bad'}}">{{item.ok ? '✓' : '✗'}}</view>
+        <view class="sdCardsRow">
+          <text class="sdLbl">底牌</text>
+          <template wx:for="{{item.holeFaces}}" wx:for-item="f" wx:key="index" is="tCardT" data="{{f}}"/>
+        </view>
+        <view class="sdCardsRow">
+          <text class="sdLbl">公共</text>
+          <template wx:for="{{item.communityFaces}}" wx:for-item="f" wx:key="index" is="tCardT" data="{{f}}"/>
+        </view>
       </view>
     </scroll-view>
-    <view class="sdHint">按红筹码星数升序排列 · 金边牌为最强五张组成 · ✓ 顺序正确 ✗ 弱于上一位</view>
+    <view class="sdHint">按红筹码星数升序 · 金边牌为最强五张 · ✓ 顺序正确 ✗ 弱于上一位</view>
+    <view class="sdDoneRow">
+      <button wx:if="{{playMode !== 'guest'}}" class="sdDone" catchtap="onBoardDone">完 成</button>
+      <text wx:else class="sdWait">⏳ 等待房主结算…</text>
+    </view>
   </view>
 </view>
 
