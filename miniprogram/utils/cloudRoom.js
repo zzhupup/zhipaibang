@@ -8,7 +8,7 @@
    - actions  操作馈送（客人写入，房主按序消费）
    ================================================================ */
 
-const ENV_ID = 'YOUR_CLOUD_ENV_ID';   // ← 替换为你的云开发环境 ID
+const ENV_ID = 'cloud1-d3gahr5rwf6e00397';   // ← 替换为你的云开发环境 ID
 let db = null;
 
 function init() {
