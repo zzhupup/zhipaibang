@@ -40,21 +40,22 @@
 1. 微信开发者工具导入项目，替换 `project.config.json` 的 `appid`
 2. **联机需开通云开发**（开发者工具 → 云开发 → 创建环境，基础版约 19.9 元/月），把环境 ID 填入 `utils/cloudRoom.js` 的 `ENV_ID`
 3. 云开发控制台创建 4 个集合并配置安全规则（权限 → 自定义安全规则）。
-   **注意：房主可以转移，所以 rooms/hands/actions 不能限制"仅创建者可写"**，
-   否则新房主开局/发牌/写快照都会被拒：
+   **注意**：① 房主可以转移，所以 rooms/hands/actions 不能限制"仅创建者可写"；
+   ② 规则表达式不支持 `null` 字面量（`auth.openid != null` 会报 rule invalid），
+   写权限直接用 `true`；③ 粘贴时不能带 `//` 注释：
 
 ```json
-// rooms：任何登录用户可写（快照/状态/hostPid 转移，无敏感数据）
-{ "read": true, "write": "auth.openid != null" }
+// rooms：任何用户可写（快照/状态/hostPid 转移，无敏感数据）
+{ "read": true, "write": true }
 
 // players：只能写自己的文档（心跳/退出删除）
 { "read": true, "write": "auth.openid == resource._openid" }
 
-// hands：底牌本人可读；房主（含转移后的新房主）可写
-{ "read": "auth.openid == resource.owner", "write": "auth.openid != null" }
+// hands：底牌只有本人可读；房主（含转移后的新房主）可写
+{ "read": "auth.openid == resource.owner", "write": true }
 
-// actions：操作馈送，任何登录用户可读写（房主需删除他人文档消费馈送）
-{ "read": true, "write": "auth.openid != null" }
+// actions：操作馈送，任何用户可读写（房主需删除他人文档消费馈送）
+{ "read": true, "write": true }
 ```
 
 4. 编译后即可：创建房间 → 分享房间号/卡片 → 好友加入 → 开始对局
