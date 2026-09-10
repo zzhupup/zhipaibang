@@ -1,4 +1,11 @@
 const game = require('../../utils/game.js');
+// 人数上下限统一取自云层常量（改人数只需动 utils/cloudRoom.js 一处）
+let cloudRoom = null;
+try { cloudRoom = require('../../utils/cloudRoom.js'); } catch (e) { /* 保底下面默认值 */ }
+const MIN_N = (cloudRoom && cloudRoom.MIN_PLAYERS) || 3;
+const MAX_N = (cloudRoom && cloudRoom.MAX_PLAYERS) || 8;
+const COUNTS = [];
+for (let i = MIN_N; i <= MAX_N; i++) COUNTS.push(i);
 
 Page({
   data: {
@@ -6,6 +13,7 @@ Page({
     mode: 'standard',
     n: 3,
     names: ['', '', ''],
+    counts: COUNTS,           // 可选人数（3~8）
     nick: '',
     joinCode: '',
     showRules: false,
@@ -15,7 +23,7 @@ Page({
   onLoad(options) {
     this.setData({ rulesHtml: this.rulesHtml() });
     // 静默清扫：释放"房内已无活跃玩家"的死房间（未开通云开发时静默忽略，不影响首页）
-    try { require('../../utils/cloudRoom.js').sweepRooms(); } catch (e) { /* noop */ }
+    try { cloudRoom && cloudRoom.sweepRooms(); } catch (e) { /* noop */ }
     // 分享卡片直达加入房间
     if (options && options.joinCode) {
       this.setData({ playMode: 'online', joinCode: options.joinCode });
@@ -25,7 +33,7 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '筹码密语 · 无言的配合，完美的劫案！3~6 人在线或同屏',
+      title: `筹码密语 · 无言的配合，完美的劫案！${MIN_N}~${MAX_N} 人在线或同屏`,
       path: '/pages/home/home',
     };
   },

@@ -92,6 +92,9 @@
 
 /* ---- 同屏热座 ---- */
 .segRow { display: flex; gap: 14rpx; }
+/* 人数选择：3~8 共 6 个按钮，一行会太窄 → 每行 3 个自动换行 */
+.cntRow { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.cntRow .opt { flex: 0 0 calc((100% - 28rpx) / 3); }
 .opt {
   flex: 1;
   background: rgba(255,255,255,.06);

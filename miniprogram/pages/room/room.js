@@ -20,6 +20,8 @@ Page({
     customCount: 0,          // 已勾选数量
     roomList: [],            // 可加入的房间列表（加入页）
     listLoading: true,
+    minPlayers: cloudRoom.MIN_PLAYERS,   // 开局下限（3）
+    maxPlayers: cloudRoom.MAX_PLAYERS,   // 房间上限（8）
     error: '',
     loading: false,
   },
@@ -205,8 +207,8 @@ Page({
 
   async startGame() {
     const list = this.data.players;
-    if (list.length < 3) {
-      this.setData({ error: '至少需要 3 位帮众才能开工' });
+    if (list.length < cloudRoom.MIN_PLAYERS) {
+      this.setData({ error: `至少需要 ${cloudRoom.MIN_PLAYERS} 位帮众才能开工` });
       return;
     }
     // 关键：联机开局必须用在线玩家列表初始化引擎（此前缺失导致空状态：牌堆52不发牌/无筹码/崩溃）

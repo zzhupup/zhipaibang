@@ -7,7 +7,7 @@
     <view class="title">筹码密语</view>
     <view class="sub">合作扑克劫案 · 无言的配合</view>
     <view class="tipRow">
-      <text class="tipChip">3~6 人</text>
+      <text class="tipChip">3~8 人</text>
       <text class="tipChip">在线联机 / 同屏热座</text>
       <text class="tipChip">全程禁止说牌</text>
     </view>
@@ -52,8 +52,8 @@
       <view class="modeDesc">{{mode==='advanced'?'启用挑战牌与专家牌（各 10 张），更刺激':'第一次玩建议标准模式'}}</view>
 
       <view class="secTitle">玩家人数</view>
-      <view class="segRow">
-        <button wx:for="{{[3,4,5,6]}}" wx:key="*this" class="opt cnt {{n===item?'sel':''}}" bindtap="pickCount" data-v="{{item}}">{{item}} 人</button>
+      <view class="cntRow">
+        <button wx:for="{{counts}}" wx:key="*this" class="opt cnt {{n===item?'sel':''}}" bindtap="pickCount" data-v="{{item}}">{{item}} 人</button>
       </view>
 
       <view class="secTitle">玩家名字</view>

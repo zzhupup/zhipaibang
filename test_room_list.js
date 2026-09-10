@@ -17,6 +17,7 @@ const rooms = [
   { _id: '444444', status: 'lobby', hostName: '满员房', createdAt: now - 20000 },
   { _id: '555555', status: 'lobby', hostName: '待释放房', hostPid: 'e1', createdAt: now - 100000 },
   { _id: '666666', status: 'lobby', hostName: '换房主房', hostPid: 'f1', createdAt: now - 5000 },
+  { _id: '777777', status: 'lobby', hostName: '七人房', hostPid: 'g1', createdAt: now - 15000 },
 ];
 const players = [
   { _id: 'a1', roomId: '111111', name: '甲', created: 1, lastSeen: now - 5000 },
@@ -29,6 +30,16 @@ const players = [
   { _id: 'c4', roomId: '444444', name: '4', created: 8, lastSeen: now - 4000 },
   { _id: 'c5', roomId: '444444', name: '5', created: 9, lastSeen: now - 5000 },
   { _id: 'c6', roomId: '444444', name: '6', created: 10, lastSeen: now - 6000 },
+  { _id: 'c7', roomId: '444444', name: '7', created: 11, lastSeen: now - 7000 },
+  { _id: 'c8', roomId: '444444', name: '8', created: 12, lastSeen: now - 8000 },
+  // 777777：7 人在场（旧上限 6 时进不去，新上限 8 应当可加入）
+  { _id: 'g1', roomId: '777777', name: '甲', created: 21, lastSeen: now - 1000 },
+  { _id: 'g2', roomId: '777777', name: '乙', created: 22, lastSeen: now - 1000 },
+  { _id: 'g3', roomId: '777777', name: '丙', created: 23, lastSeen: now - 1000 },
+  { _id: 'g4', roomId: '777777', name: '丁', created: 24, lastSeen: now - 1000 },
+  { _id: 'g5', roomId: '777777', name: '戊', created: 25, lastSeen: now - 1000 },
+  { _id: 'g6', roomId: '777777', name: '己', created: 26, lastSeen: now - 1000 },
+  { _id: 'g7', roomId: '777777', name: '庚', created: 27, lastSeen: now - 1000 },
   // 555555：房主早已失联（僵尸文档），另一人正常心跳
   { _id: 'e1', roomId: '555555', name: '失联房主', created: 11, lastSeen: now - 300000 },
   { _id: 'e2', roomId: '555555', name: '在场者', created: 12, lastSeen: now - 2000 },
@@ -144,7 +155,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const r1 = list.find(r => r.code === '111111');
   ok(r1 && r1.count === 2, '在线人数=2（超时玩家不计入），实际 ' + (r1 && r1.count));
   ok(r1 && r1.hostName === '房主甲', '房主昵称正确');
-  ok(r1 && r1.max === 6, '上限 6 人');
+  ok(r1 && r1.max === 8, '上限 8 人，实际 ' + (r1 && r1.max));
+  const r44 = list.find(r => r.code === '444444');
+  ok(r44 && r44.count === 8, '八人在线全部计入（房间数增至 8），实际 ' + (r44 && r44.count));
   const order = list.map(r => r.createdAt);
   ok(JSON.stringify(order) === JSON.stringify(order.slice().sort((a, b) => b - a)), '按创建时间倒序');
 
@@ -168,10 +181,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(lv2 && lv2.newHostPid === 'f2', '两活跃玩家时房主转移给下一位，实际：' + JSON.stringify(lv2));
   ok(rooms.some(r => r._id === '666666'), '仍有活跃玩家 → 房间保留');
 
-  console.log('joinRoom 满员保护：');
+  console.log('joinRoom 满员保护（上限 8 人）：');
+  ok(cloudRoom.MAX_PLAYERS === 8, '云层上限常量为 8，实际 ' + cloudRoom.MAX_PLAYERS);
+  ok(cloudRoom.MIN_PLAYERS === 3, '云层下限常量为 3，实际 ' + cloudRoom.MIN_PLAYERS);
   let err = null;
-  try { await cloudRoom.joinRoom('444444', '第七人'); } catch (e) { err = e; }
-  ok(err && /已满/.test(err.message), '6 人房间拒绝加入，实际：' + (err && err.message));
+  try { await cloudRoom.joinRoom('444444', '第九人'); } catch (e) { err = e; }
+  ok(err && /已满/.test(err.message) && /8/.test(err.message),
+    '8 人房间拒绝加入且提示 8 人，实际：' + (err && err.message));
+  const j7 = await cloudRoom.joinRoom('777777', '第八人').catch(e => e);
+  ok(j7 && j7.roomId === '777777', '7 人房间可加入第 8 人（旧上限 6 时会被拒），实际：' + JSON.stringify(j7));
   let err2 = null;
   try { await cloudRoom.joinRoom('222222', '旁观'); } catch (e) { err2 = e; }
   ok(err2 && /不存在|已开始/.test(err2.message), '已释放/对局中房间拒绝加入，实际：' + (err2 && err2.message));

@@ -93,7 +93,7 @@ async function listRooms() {
       code: r._id,
       hostName: r.hostName || '房主',
       count: online[r._id],
-      max: 6,
+      max: MAX_PLAYERS,
       createdAt: r.createdAt || 0,
     }));
 }
@@ -140,7 +140,7 @@ async function joinRoom(code, name) {
   const doc = await db.collection('rooms').doc(code).get();
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
-  // 满员保护（最多 6 人）：统计"在线"玩家，用本房间最新心跳作为时间参照，
+  // 满员保护（最多 MAX_PLAYERS 人）：统计"在线"玩家，用本房间最新心跳作为时间参照，
   // 避免被杀进程留下的僵尸文档把房间误判为满员
   const res = await db.collection('players').where({ roomId: code }).limit(30).get().catch(() => ({ data: [] }));
   const list = res.data || [];
@@ -148,10 +148,14 @@ async function joinRoom(code, name) {
   list.forEach(d => { const t = normTime(d.lastSeen); if (t > serverNow) serverNow = t; });
   if (!serverNow) serverNow = Date.now();
   const onlineCount = list.filter(d => d.lastSeen && serverNow - normTime(d.lastSeen) <= ONLINE_MS).length;
-  if (onlineCount >= 6) throw new Error('房间已满（最多 6 人）');
+  if (onlineCount >= MAX_PLAYERS) throw new Error(`房间已满（最多 ${MAX_PLAYERS} 人）`);
   const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: db.serverDate() } });
   return { roomId: code, playerId: p._id };
 }
+
+/* ---------- 玩家人数上下限（改人数只动这里：云层满员判定 + 列表展示都由它推导） ---------- */
+const MIN_PLAYERS = 3;
+const MAX_PLAYERS = 8;
 
 /* ---------- 玩家列表（按加入时间排序 → 座位号；只保留 45 秒内有心跳的在线玩家） ---------- */
 const ONLINE_MS = 45000;
@@ -398,7 +402,8 @@ async function removeAction(actionId) {
 }
 
 module.exports = {
-  ENV_ID, init, createRoom, joinRoom, listPlayers, listRooms, leaveRoom, releaseRoom, sweepRooms, startHeartbeat,
+  ENV_ID, MIN_PLAYERS, MAX_PLAYERS,
+  init, createRoom, joinRoom, listPlayers, listRooms, leaveRoom, releaseRoom, sweepRooms, startHeartbeat,
   watchRoom, watchPlayers, watchHand, watchActions,
   updateRoomPublic, updateRoom, writeHands,
   setHandPrompt, clearHandPrompt, sendAction, removeAction,
