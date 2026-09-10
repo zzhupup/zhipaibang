@@ -18,6 +18,8 @@ Page({
     gameMode: 'standard',    // standard | advanced | custom（房主选择，写房间文档同步给所有人）
     chalList: CHAL_LIST,     // 自定义模式：挑战牌勾选列表
     customCount: 0,          // 已勾选数量
+    roomList: [],            // 可加入的房间列表（加入页）
+    listLoading: true,
     error: '',
     loading: false,
   },
@@ -38,9 +40,11 @@ Page({
     // home 页跳转时 encodeURIComponent 过，必须解码（否则中文昵称存库成 %E7%8E%A9... 乱码）
     this.name = options.name ? decodeURIComponent(options.name) : '玩家';
     if (this.data.action === 'create') this.doCreate();
+    else this.startRoomList();   // 加入页：轮询展示可加入的房间
   },
 
   onUnload() {
+    this.stopRoomList();
     if (this.watcher) this.watcher.close();
     if (this.roomWatcher) this.roomWatcher.close();
     if (this._hb) this._hb.stop();
@@ -59,6 +63,34 @@ Page({
 
   onCode(e) { this.setData({ joinCode: e.detail.value }); },
 
+  /* ---------- 可加入房间列表（加入页）---------- */
+  startRoomList() {
+    this.loadRooms();
+    // 每 5 秒刷新一次，新开的房间自动出现
+    this._listTimer = setInterval(() => this.loadRooms(), 5000);
+  },
+  stopRoomList() {
+    if (this._listTimer) { clearInterval(this._listTimer); this._listTimer = null; }
+  },
+  async loadRooms() {
+    try {
+      const list = await cloudRoom.listRooms();
+      this.setData({ roomList: list, listLoading: false });
+    } catch (e) {
+      console.warn('[room] 房间列表拉取失败', e && (e.errMsg || e.message));
+      this.setData({ listLoading: false });
+    }
+  },
+  /* 点击列表中的房间直接加入（满员则提示） */
+  onPickRoom(e) {
+    const code = e.currentTarget.dataset.code;
+    if (!code || this.data.loading) return;
+    const item = this.data.roomList.find(r => r.code === code);
+    if (item && item.count >= item.max) { wx.showToast({ title: '房间已满', icon: 'none' }); return; }
+    this.setData({ joinCode: code });
+    this.doJoin(code);
+  },
+
   async doCreate() {
     this.setData({ loading: true });
     try {
@@ -73,14 +105,15 @@ Page({
     }
   },
 
-  async doJoin() {
-    const code = (this.data.joinCode || '').trim();
+  async doJoin(presetCode) {
+    const code = String(typeof presetCode === 'string' ? presetCode : (this.data.joinCode || '')).trim();
     if (!/^\d{6}$/.test(code)) { this.setData({ error: '请输入 6 位房间号' }); return; }
     this.setData({ loading: true, error: '' });
     try {
       const { roomId, playerId } = await cloudRoom.joinRoom(code, this.name);
       this.roomId = roomId;
       this.myPlayerId = playerId;
+      this.stopRoomList();   // 已进房，停止房间列表轮询
       this._hb = cloudRoom.startHeartbeat(roomId, playerId);   // 在线心跳
       this.setData({ roomId, isHost: false, loading: false });
       this.startWatch();

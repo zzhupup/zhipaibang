@@ -17,6 +17,26 @@
       <input class="codeInput" type="number" maxlength="6" placeholder="输入 6 位房间号"
         value="{{joinCode}}" bindinput="onCode" />
       <button class="btn" bindtap="doJoin" loading="{{loading}}">加入</button>
+
+      <!-- 可加入的房间（实时刷新，点卡片直接进） -->
+      <view class="listHead">
+        <text class="listTitle">可加入的房间</text>
+        <text class="refresh" bindtap="loadRooms">刷新</text>
+      </view>
+      <view wx:if="{{roomList.length}}" class="roomList">
+        <view wx:for="{{roomList}}" wx:key="code" class="roomItem"
+          bindtap="onPickRoom" data-code="{{item.code}}">
+          <view class="rLeft">
+            <text class="rCode">{{item.code}}</text>
+            <text class="rHost">{{item.hostName}} 的房间</text>
+          </view>
+          <view class="rRight">
+            <text class="rCount">{{item.count}}/{{item.max}} 人</text>
+            <text class="rJoin {{item.count>=item.max?'full':''}}">{{item.count>=item.max?'已满':'加入'}}</text>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="roomEmpty">{{listLoading ? '正在查找房间…' : '暂无可用房间，可自己创建一个'}}</view>
     </block>
 
     <!-- 加入成功等待中 -->

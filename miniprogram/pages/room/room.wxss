@@ -88,3 +88,37 @@
 .startBtn { display: block; margin: 30rpx auto 0; width: 80%; }
 .error { color: #ff9a90; font-size: 24rpx; margin-top: 16rpx; text-align: center; }
 .backBtn { display: block; margin: 24rpx auto 0; width: 60%; }
+
+/* ---- 加入页：可加入房间列表 ---- */
+.listHead {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 34rpx 0 14rpx;
+}
+.listTitle { font-size: 27rpx; color: #e8c15a; font-weight: bold; }
+.refresh { font-size: 24rpx; color: #7fb2ff; padding: 4rpx 10rpx; }
+.roomList { display: flex; flex-direction: column; gap: 14rpx; }
+.roomItem {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.06);
+  border: 2rpx solid rgba(46,122,88,.7);
+  border-radius: 16rpx; padding: 18rpx 22rpx;
+}
+.roomItem:active { background: rgba(61,155,109,.2); }
+.rLeft { display: flex; flex-direction: column; gap: 6rpx; min-width: 0; }
+.rCode { font-size: 38rpx; color: #ffe9b0; font-weight: bold; letter-spacing: 6rpx; }
+.rHost { font-size: 22rpx; color: #9fc7b2; }
+.rRight { display: flex; align-items: center; gap: 16rpx; flex: none; }
+.rCount { font-size: 23rpx; color: #7dd8a8; }
+.rJoin {
+  font-size: 25rpx; color: #fff; font-weight: bold;
+  background: linear-gradient(#3d9b6d, #2a7a50);
+  border: 2rpx solid #7dd8a8; border-radius: 12rpx;
+  padding: 10rpx 26rpx;
+}
+.rJoin.full {
+  background: rgba(255,255,255,.08); border-color: #6f9c88; color: #8fb8a3;
+}
+.roomEmpty {
+  text-align: center; color: #7ba28e; font-size: 24rpx;
+  padding: 40rpx 0; background: rgba(0,0,0,.2); border-radius: 16rpx;
+}

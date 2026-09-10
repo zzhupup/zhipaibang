@@ -51,12 +51,61 @@ async function createRoom(name) {
   return { roomId: code, playerId: p._id };
 }
 
+/* ---------- 可加入房间列表（加入页展示） ----------
+   只列 status='lobby' 的房间，并且只保留"真的有人在线"的：
+   players 文档 45 秒内有心跳才算在线，无人房间（历史垃圾/全员退出没删干净）不展示。
+   服务器时间轴：以本次拉到的所有 lastSeen 的最新值作为"现在"参照，
+   避免各手机本机时钟快慢不同把在线玩家误判为离线（同 listPlayers 的处理思路）。 */
+async function listRooms() {
+  init();
+  const _ = db.command;
+  const res = await db.collection('rooms').where({ status: 'lobby' })
+    .orderBy('createdAt', 'desc').limit(20).get().catch(() => ({ data: [] }));
+  const rooms = res.data || [];
+  if (!rooms.length) return [];
+  const codes = rooms.map(r => r._id);
+  // 分批查玩家（in 数组不宜过长），最多 3 批 × 10
+  const plist = [];
+  for (let i = 0; i < codes.length && i < 30; i += 10) {
+    const chunk = codes.slice(i, i + 10);
+    const pr = await db.collection('players').where({ roomId: _.in(chunk) })
+      .orderBy('created', 'desc').limit(100).get().catch(() => ({ data: [] }));
+    (pr.data || []).forEach(d => plist.push(d));
+  }
+  let serverNow = 0;
+  plist.forEach(d => { const t = normTime(d.lastSeen); if (t > serverNow) serverNow = t; });
+  if (!serverNow) serverNow = Date.now();
+  const online = {};
+  plist.forEach(d => {
+    if (serverNow - normTime(d.lastSeen) > ONLINE_MS) return;
+    online[d.roomId] = (online[d.roomId] || 0) + 1;
+  });
+  return rooms
+    .filter(r => online[r._id] > 0)
+    .map(r => ({
+      code: r._id,
+      hostName: r.hostName || '房主',
+      count: online[r._id],
+      max: 6,
+      createdAt: r.createdAt || 0,
+    }));
+}
+
 /* ---------- 玩家加入 ---------- */
 async function joinRoom(code, name) {
   init();
   const doc = await db.collection('rooms').doc(code).get();
   if (!doc.data) throw new Error('房间不存在，请核对 6 位房间号');
   if (doc.data.status !== 'lobby') throw new Error('对局已开始，无法加入');
+  // 满员保护（最多 6 人）：统计"在线"玩家，用本房间最新心跳作为时间参照，
+  // 避免被杀进程留下的僵尸文档把房间误判为满员
+  const res = await db.collection('players').where({ roomId: code }).limit(30).get().catch(() => ({ data: [] }));
+  const list = res.data || [];
+  let serverNow = 0;
+  list.forEach(d => { const t = normTime(d.lastSeen); if (t > serverNow) serverNow = t; });
+  if (!serverNow) serverNow = Date.now();
+  const onlineCount = list.filter(d => d.lastSeen && serverNow - normTime(d.lastSeen) <= ONLINE_MS).length;
+  if (onlineCount >= 6) throw new Error('房间已满（最多 6 人）');
   const p = await db.collection('players').add({ data: { roomId: code, name: name || '玩家', created: Date.now(), lastSeen: db.serverDate() } });
   return { roomId: code, playerId: p._id };
 }
@@ -292,7 +341,7 @@ async function removeAction(actionId) {
 }
 
 module.exports = {
-  ENV_ID, init, createRoom, joinRoom, listPlayers, leaveRoom, startHeartbeat,
+  ENV_ID, init, createRoom, joinRoom, listPlayers, listRooms, leaveRoom, startHeartbeat,
   watchRoom, watchPlayers, watchHand, watchActions,
   updateRoomPublic, updateRoom, writeHands,
   setHandPrompt, clearHandPrompt, sendAction, removeAction,
