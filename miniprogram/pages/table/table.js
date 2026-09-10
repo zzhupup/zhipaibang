@@ -82,10 +82,10 @@ Page({
       cloudRoom.listPlayers(this.roomId, this.myPlayerId).then(list => {
         console.log('[host] 开局玩家名单（在线过滤后）:', list.map(p => p.seat + ':' + p.name).join(', '));
         this.seatOpenids = list.map(p => p.openid);
-        const { ui } = createHostUI({
+        this.hostApi = createHostUI({
           page: this, roomId: this.roomId, mySeat: this.mySeat, players: list,
         });
-        game.setUI(ui);
+        game.setUI(this.hostApi.ui);
         this.watchFeed();
         Promise.resolve(game.begin()).catch(e => {
           console.error('[host] 引擎流程异常', e);
@@ -328,6 +328,12 @@ Page({
     game.confirmPlayer(i);
   },
 
+  /* 房主代为继续：目标玩家未响应（失联/退出）时用默认答案放行引擎 */
+  onSkipWait() {
+    if (this.mode !== 'host' || !this.hostApi) return;
+    if (this.hostApi.skip()) this.toast('已代为继续');
+  },
+
   /* ---- 游戏内发言：文字显示在自己座位框内 ---- */
   onChatInput(e) {
     this.setData({ chatText: e.detail.value });
@@ -525,7 +531,8 @@ Page({
           } else {
             this.setData({
               guestModal: null, guestPick: null,
-              waitModal: { title: '⏳ 请稍候', body: `<div style="text-align:center;padding:20rpx;font-size:28rpx">${pr.waitName || '一位帮众'} 正在进行私密操作…</div>` },
+              // 房主端附带"代为继续"按钮：目标玩家失联/退出时放行引擎，避免流程卡死
+              waitModal: { title: '⏳ 请稍候', body: `<div style="text-align:center;padding:20rpx;font-size:28rpx">${pr.waitName || '一位帮众'} 正在进行私密操作…</div>`, canSkip: this.mode === 'host' },
             });
           }
         }

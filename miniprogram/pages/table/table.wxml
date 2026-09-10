@@ -243,13 +243,16 @@
   </view>
 </view>
 
-<!-- 客人：他人私密操作等待提示 -->
+<!-- 客人：他人私密操作等待提示（房主端可代为继续） -->
 <view class="mroot {{waitModal?'show':''}}">
   <view class="mbox" wx:if="{{waitModal}}" catchtap="noop">
     <view class="mtitle">{{waitModal.title}}</view>
     <scroll-view scroll-y class="mbodyS">
       <rich-text nodes="{{waitModal.body}}"></rich-text>
     </scroll-view>
+    <view class="macts" wx:if="{{waitModal.canSkip}}">
+      <button class="mbtn warn" catchtap="onSkipWait">该玩家未响应，代为继续</button>
+    </view>
   </view>
 </view>
 

@@ -52,6 +52,18 @@ function createHostUI(opts) {
     return false;
   }
 
+  /* 房主代为继续：目标玩家失联/中途退出时，用默认答案（首个按钮/首张牌）放行引擎，
+     防止引擎永久等待一个没人能回应的弹窗 */
+  function skip() {
+    if (!pending || pending.done) return false;
+    const def = pending.def;
+    pending.done = true;
+    const p = pending.resolve; pending = null;
+    console.warn('[host] 代为继续：等待中的玩家未响应，使用默认答案', def);
+    clearPrompts().then(() => p(def));
+    return true;
+  }
+
   /* 房主本机弹窗参与"先到先得"竞速 */
   function localRace(o, pid) {
     page.showModal(o).then(v => {
@@ -99,7 +111,7 @@ function createHostUI(opts) {
       // 且目标玩家回复时 pid 取不到 → 房主永远等不到动作，表现为"弹窗不出现"
       publicPrompt = { pid, target, waitName: game.state.players[target].name, title: o.title, body: o.body, actions: o.actions };
       return new Promise(res => {
-        pending = { pid, target, resolve: res, done: false };   // 同步先挂，理由同上
+        pending = { pid, target, resolve: res, done: false, def: o.actions && o.actions[0] ? o.actions[0].value : undefined };   // 同步先挂；def 供房主代答
         Promise.all([
           cloudRoom.setHandPrompt(roomId, target, {
             pid, title: o.title, body: o.body, actions: o.actions,
@@ -125,7 +137,7 @@ function createHostUI(opts) {
       }
       publicPrompt = { pid, target: i, waitName: game.state.players[i].name };
       return new Promise(res => {
-        pending = { pid, target: i, resolve: res, done: false };   // 同步先挂，理由同上
+        pending = { pid, target: i, resolve: res, done: false, def: 0 };   // 同步先挂；def=首张牌供房主代答
         Promise.all([
           cloudRoom.setHandPrompt(roomId, i, { pid, pickHole: true, prompt, cards }),
           cloudRoom.updateRoomPublic(roomId, withPrompt(game.getSnapshot(), publicPrompt)),
@@ -138,7 +150,7 @@ function createHostUI(opts) {
       cloudRoom.updateRoom(roomId, { status: 'over' });
     },
   };
-  return { ui, feed };
+  return { ui, feed, skip };
 }
 
 module.exports = { createHostUI };
