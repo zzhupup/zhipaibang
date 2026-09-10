@@ -52,14 +52,19 @@ async function createRoom(name) {
 }
 
 /* ---------- 可加入房间列表（加入页展示） ----------
-   只列 status='lobby' 的房间，并且只保留"真的有人在线"的：
-   players 文档 45 秒内有心跳才算在线，无人房间（历史垃圾/全员退出没删干净）不展示。
+   只列 status='lobby' 且"真的有人在线"的房间：
+   players 文档 45 秒内有心跳才算在线，无人房间不展示。
    服务器时间轴：以本次拉到的所有 lastSeen 的最新值作为"现在"参照，
-   避免各手机本机时钟快慢不同把在线玩家误判为离线（同 listPlayers 的处理思路）。 */
+   避免各手机本机时钟快慢不同把在线玩家误判为离线（同 listPlayers 的处理思路）。
+
+   顺带回收：本次还会拉取非 lobby 状态的房间，凡是"已无活跃玩家"的
+   （不管是对局中掉线、还是全员强杀进程留下的），都交给 releaseRoom()
+   自动释放——房间文档被删除后房号可复用，也不会再出现在任何列表里。 */
 async function listRooms() {
   init();
   const _ = db.command;
-  const res = await db.collection('rooms').where({ status: 'lobby' })
+  // 不限状态：对局中/已结束的死房间同样要回收，否则会永远留在库里
+  const res = await db.collection('rooms')
     .orderBy('createdAt', 'desc').limit(20).get().catch(() => ({ data: [] }));
   const rooms = res.data || [];
   if (!rooms.length) return [];
@@ -80,8 +85,10 @@ async function listRooms() {
     if (serverNow - normTime(d.lastSeen) > ONLINE_MS) return;
     online[d.roomId] = (online[d.roomId] || 0) + 1;
   });
+  // 无人活跃 → 自动释放（云函数内用服务端时间再校验一次，避免误删）
+  rooms.filter(r => !online[r._id]).slice(0, 5).forEach(r => { releaseRoom(r._id); });
   return rooms
-    .filter(r => online[r._id] > 0)
+    .filter(r => r.status === 'lobby' && online[r._id] > 0)
     .map(r => ({
       code: r._id,
       hostName: r.hostName || '房主',
@@ -89,6 +96,42 @@ async function listRooms() {
       max: 6,
       createdAt: r.createdAt || 0,
     }));
+}
+
+/* ---------- 自动释放房间（房内已无活跃玩家） ----------
+   为什么必须走云函数：players 安全规则是"只能写自己的文档"（删不掉别人残留的），
+   hands 客户端零写权限（底牌删不掉），所以客户端无论如何都清理不干净。
+   云函数用管理权限 + 服务端时间做权威判定与全量清理。
+   节流：同一房间 30 秒内只尝试一次，避免加入页轮询反复打云函数。 */
+const RELEASE_THROTTLE_MS = 30000;
+const lastReleaseAt = {};
+function releaseRoom(roomId) {
+  if (!roomId) return Promise.resolve(false);
+  const t = Date.now();
+  if (lastReleaseAt[roomId] && t - lastReleaseAt[roomId] < RELEASE_THROTTLE_MS) {
+    return Promise.resolve(false);
+  }
+  lastReleaseAt[roomId] = t;
+  init();
+  return wx.cloud.callFunction({ name: 'handops', data: { action: 'reap', roomId } })
+    .then(r => {
+      const res = r && r.result;
+      // 云函数判定为"仍有人活跃"时不删（以服务端时间为准，比客户端可靠）
+      if (res && res.ok) return !!res.reaped;
+      return dropRoomDoc(roomId);
+    })
+    .catch(() => dropRoomDoc(roomId));
+}
+/* 云函数未部署/调用失败时的兜底：至少删掉房间文档
+   （房号释放、列表不再出现；残留的玩家/底牌文档无害，等云函数可用后由它清理） */
+function dropRoomDoc(roomId) {
+  return db.collection('rooms').doc(roomId).remove().then(() => true).catch(() => false);
+}
+
+/* 静默清扫：只要结果不要列表——首页等入口调用一次，
+   保证"没人打开加入页"时死房间也能被回收（未开通云开发时静默失败） */
+function sweepRooms() {
+  return listRooms().then(() => true).catch(() => false);
 }
 
 /* ---------- 玩家加入 ---------- */
@@ -159,15 +202,29 @@ function startHeartbeat(roomId, playerId) {
 /* ---------- 离开房间 ----------
    1. 删除自己的玩家文档（其余客户端列表实时更新）
    2. 房主离开 → hostPid 转交给最早加入的剩余玩家
-   3. 无人剩余 → 删除房间文档（解散） */
+   3. 房内已无活跃玩家 → 删除房间文档（自动释放） */
 async function leaveRoom(roomId, playerId) {
   if (!roomId || !playerId) return {};
   init();
+  // 删除前先用自己文档校准时钟：判定"剩余玩家是否还活跃"必须用服务器时间轴，
+  // 否则时钟快的手机守着一个死房间不放、时钟慢的又会把活人当死人
+  try {
+    const me = await db.collection('players').doc(playerId).get();
+    if (me && me.data && me.data.lastSeen) {
+      const srv = normTime(me.data.lastSeen);
+      if (srv > 0) clockOffset = Date.now() - srv;
+    }
+  } catch (e) { /* 读不到就用本机时间兜底 */ }
   try { await db.collection('players').doc(playerId).remove(); } catch (e) {}
   const res = await db.collection('players').where({ roomId }).limit(20).get().catch(() => null);
-  const list = res ? res.data.slice().sort((a, b) => a.created - b.created) : [];
+  // 关键：只认"仍在心跳"的玩家。被强杀进程的玩家文档会永久残留，
+  // 若把它也算作"还有人在"，房间就永远释放不掉（历史遗留死房间的成因之一）。
+  const list = (res ? res.data : []).filter(onlineFilter).sort((a, b) => a.created - b.created);
   if (!list.length) {
+    // 立即摘掉房间文档（房号释放、所有列表立刻不再出现）
     try { await db.collection('rooms').doc(roomId).remove(); } catch (e) {}
+    // 再请云函数把玩家/底牌/操作馈送一并清理干净（best-effort，失败也不影响）
+    releaseRoom(roomId);
     return { dissolved: true };
   }
   const room = await db.collection('rooms').doc(roomId).get().catch(() => null);
@@ -341,7 +398,7 @@ async function removeAction(actionId) {
 }
 
 module.exports = {
-  ENV_ID, init, createRoom, joinRoom, listPlayers, listRooms, leaveRoom, startHeartbeat,
+  ENV_ID, init, createRoom, joinRoom, listPlayers, listRooms, leaveRoom, releaseRoom, sweepRooms, startHeartbeat,
   watchRoom, watchPlayers, watchHand, watchActions,
   updateRoomPublic, updateRoom, writeHands,
   setHandPrompt, clearHandPrompt, sendAction, removeAction,

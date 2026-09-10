@@ -14,6 +14,8 @@ Page({
 
   onLoad(options) {
     this.setData({ rulesHtml: this.rulesHtml() });
+    // 静默清扫：释放"房内已无活跃玩家"的死房间（未开通云开发时静默忽略，不影响首页）
+    try { require('../../utils/cloudRoom.js').sweepRooms(); } catch (e) { /* noop */ }
     // 分享卡片直达加入房间
     if (options && options.joinCode) {
       this.setData({ playMode: 'online', joinCode: options.joinCode });
